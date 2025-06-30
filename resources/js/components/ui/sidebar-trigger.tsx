@@ -7,11 +7,13 @@ import { useSidebar } from './sidebar'; // Impor useSidebar dari sidebar utama
 export function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
     const { state, isMobile, setOpenMobile, setOpen } = useSidebar(); // Dapatkan state dan setter dari context
 
-    const handleToggle = (event) => {
+    // Fix 1 & 2: Explicitly type 'event' as React.MouseEvent<HTMLButtonElement>
+    // Fix 1 & 2: Explicitly type 'prev' as boolean in state setter callbacks
+    const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
         if (isMobile) {
-            setOpenMobile(prev => !prev);
+            setOpenMobile((prev: boolean) => !prev);
         } else {
-            setOpen(prev => !prev);
+            setOpen((prev: boolean) => !prev);
         }
         onClick?.(event); // Panggil onClick yang mungkin diberikan dari parent
     };

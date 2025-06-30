@@ -131,7 +131,11 @@ export default function Details() {
     );
 }
 
-function Table({ title, columns, data }: { title: string; columns: string[]; data: any[] }) {
+interface TableRow {
+    [key: string]: string | number | null;
+}
+
+function Table({ title, columns, data }: { title: string; columns: string[]; data: TableRow[] }) {
     return (
         <div className="mb-6">
             <h2 className="text-xl font-bold text-[#E62F2A] mb-4">{title}</h2>

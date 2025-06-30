@@ -33,18 +33,21 @@ const footerNavItems: NavItem[] = [
     },
 ];
 
+
+
 export function AppSidebar() {
     return (
         <Sidebar
             collapsible="icon"
             variant="inset"
-            className="bg-[#242424]" // Warna latar belakang sidebar
+            className="bg-[--sidebar]" // Menggunakan variabel sidebar
         >
-            <SidebarHeader className="bg-[#242424] text-[#E62F2A]"> {/* Warna teks SidebarHeader */}
+            <SidebarHeader className="bg-[--sidebar] text-[--sidebar-foreground]">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard" prefetch className="text-[#E62F2A]"> {/* Warna teks link */}
+                            {/* Menggunakan text-[--sidebar-primary] untuk logo/nama aplikasi agar menonjol */}
+                            <Link href="/dashboard" prefetch className="text-[--sidebar-primary]">
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -52,15 +55,15 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent className="bg-[#242424] text-[#E62F2A]"> {/* Warna teks SidebarContent */}
+            <SidebarContent className="bg-[--sidebar] text-[--sidebar-foreground]">
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
-            <SidebarFooter className="bg-[#242424] text-[#E62F2A]"> {/* Warna teks SidebarFooter */}
-                <NavFooter items={footerNavItems} className="mt-auto text-[#E62F2A]" /> {/* Warna teks NavFooter */}
-                <NavUser className="text-[#E62F2A]" /> {/* Warna teks NavUser */}
+            <SidebarFooter className="bg-[--sidebar] text-[--sidebar-foreground]">
+                {/* Pastikan NavFooter dan NavUser juga menggunakan warna yang harmonis */}
+                <NavFooter items={footerNavItems} className="mt-auto text-[--sidebar-foreground]" />
+                <NavUser className="text-[--sidebar-foreground]" />
             </SidebarFooter>
         </Sidebar>
-
     );
 }
