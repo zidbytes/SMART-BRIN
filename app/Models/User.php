@@ -21,8 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // Pastikan 'role' ada di fillable
-        'research_group', // Pastikan 'research_group' ada di fillable
+        'role', 
+        'research_group', 
     ];
 
     /**

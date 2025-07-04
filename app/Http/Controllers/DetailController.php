@@ -2,180 +2,170 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Document;
-use Illuminate\Http\Request;
+use App\Models\DocumentPublication;
+use App\Models\DocumentKekayaanIntelektual;
+use App\Models\DocumentLoaStudiLanjut;
+use App\Models\DocumentPelatihanLuarNegeri;
+use App\Models\DocumentPks;
+use App\Models\DocumentPurwarupa;
 use Inertia\Inertia;
 
 class DetailController extends Controller
 {
     public function index()
     {
-        // Ambil data publikasi
-        $publications = Document::where('document_type', 'publication')
-            ->with('user', 'publication')
-            ->latest()
+        // Publikasi
+        $publications = DocumentPublication::with('document')
             ->get()
-            ->map(function ($document) {
+            ->map(function ($pub) {
                 return [
-                    'No' => $document->id,
-                    'Periode Input' => $document->created_at->format('Y-m-d'),
-                    'Bulan' => $document->created_at->format('F'),
-                    'Monev Stamp' => $document->monev_stamp ? $document->monev_stamp->format('Y-m-d H:i') : '-',
-                    'Judul Publikasi Global' => $document->title,
-                    'Kelompok Riset' => $document->kelompok_riset ?? '-',
-                    'Author 1' => $document->publication->authors1 ?? '-',
-                    'Author 2' => $document->publication->authors2 ?? '-',
-                    'Author 3' => $document->publication->authors3 ?? '-',
-                    'Author 4' => $document->publication->authors4 ?? '-',
-                    'Author 5' => $document->publication->authors5 ?? '-',
-                    'Author 6' => $document->publication->authors6 ?? '-',
-                    'Author Non-PRSDI' => $document->publication->nonprsdi_authors ?? '-',
-                    'Jenis' => $document->publication->jenis ?? '-',
-                    'Status' => $document->publication->status ?? '-',
-                    'Nama Jurnal/Prosiding' => $document->publication->nama_jurnal ?? '-',
-                    'Terindeks Scopus' => $document->publication->scopus_indexed ? 'Ya' : 'Tidak',
-                    'Reputasi' => $document->publication->reputasi ?? '-',
-                    'File di Google Drive' => $document->publication->file_drive_link ?? '-',
-                    'URL' => $document->publication->url ?? '-',
-                    'DOI' => $document->publication->doi ?? '-',
+                    'No' => $pub->id,
+                    'Periode Input' => $pub->document?->created_at?->format('Y-m-d') ?? '-',
+                    'Bulan' => $pub->document?->created_at?->format('F') ?? '-',
+                    'Monev Stamp' => $pub->document?->monev_stamp?->format('Y-m-d H:i') ?? '-',
+                    'Judul Publikasi Global' => $pub->document?->title ?? '-',
+                    'Kelompok Riset' => $pub->document?->kelompok_riset ?? '-',
+                    'Author 1' => $pub->authors1 ?? '-',
+                    'Author 2' => $pub->authors2 ?? '-',
+                    'Author 3' => $pub->authors3 ?? '-',
+                    'Author 4' => $pub->authors4 ?? '-',
+                    'Author 5' => $pub->authors5 ?? '-',
+                    'Author 6' => $pub->authors6 ?? '-',
+                    'Author 7' => $pub->authors7 ?? '-',
+                    'Author Non-PRSDI' => $pub->nonprsdi_authors ?? '-',
+                    'Jenis' => $pub->jenis ?? '-',
+                    'Status' => $pub->status ?? '-',
+                    'Nama Jurnal/Prosiding' => $pub->nama_jurnal ?? '-',
+                    'Terindeks Scopus' => $pub->scopus_indexed ? 'Ya' : 'Tidak',
+                    'Reputasi' => $pub->reputasi ?? '-',
+                    'File di Google Drive' => $pub->file_drive_link ?? '-',
+                    'URL' => $pub->url ?? '-',
+                    'DOI' => $pub->doi ?? '-',
                 ];
             });
 
-        // Ambil data Kekayaan Intelektual
-        $intellectualProperties = Document::where('document_type', 'intellectual_property')
-            ->with('user', 'intellectualProperty')
-            ->latest()
+        // Kekayaan Intelektual
+        $intellectualProperties = DocumentKekayaanIntelektual::with('document')
             ->get()
-            ->map(function ($document) {
+            ->map(function ($ip) {
                 return [
-                    'No' => $document->id,
-                    'Periode Input' => $document->created_at->format('Y-m-d'),
-                    'Monev Stamp' => $document->monev_stamp ? $document->monev_stamp->format('Y-m-d H:i') : '-',
-                    'Judul' => $document->title,
-                    'Kelompok Riset' => $document->kelompok_riset ?? '-',
-                    'Inventor 1' => $document->intellectualProperty->inventors[0] ?? '-',
-                    'Inventor 2' => $document->intellectualProperty->inventors[1] ?? '-',
-                    'Inventor 3' => $document->intellectualProperty->inventors[2] ?? '-',
-                    'Inventor 4' => $document->intellectualProperty->inventors[3] ?? '-',
-                    'Inventor 5' => $document->intellectualProperty->inventors[4] ?? '-',
-                    'Inventor 6' => $document->intellectualProperty->inventors[5] ?? '-',
-                    'Inventor 7' => $document->intellectualProperty->inventors[6] ?? '-',
-                    'Inventor 8' => $document->intellectualProperty->inventors[7] ?? '-',
-                    'Non Sivitas PRSDI' => implode(', ', $document->intellectualProperty->nonprsdi_inventors ?? []) ?: '-',
-                    'Status' => $document->intellectualProperty->status ?? '-',
-                    'Jenis' => $document->intellectualProperty->jenis ?? '-',
-                    'No Pendaftaran' => $document->intellectualProperty->no_pendaftaran ?? '-',
-                    'Tanggal Daftar' => $document->intellectualProperty->tanggal_daftar?->format('Y-m-d') ?? '-',
-                    'No Sertifikat' => $document->intellectualProperty->no_sertifikat ?? '-',
-                    'Tanggal Sertifikasi' => $document->intellectualProperty->tanggal_sertifikasi?->format('Y-m-d') ?? '-',
-                    'Link Upload' => $document->intellectualProperty->link_upload ?? '-',
-                    'LINK Dokumen' => $document->intellectualProperty->link_dokumen ?? '-',
+                    'No' => $ip->id,
+                    'Periode Input' => $ip->document?->created_at?->format('Y-m-d') ?? '-',
+                    'Monev Stamp' => $ip->document?->monev_stamp?->format('Y-m-d H:i') ?? '-',
+                    'Judul' => $ip->document?->title ?? '-',
+                    'Kelompok Riset' => $ip->document?->kelompok_riset ?? '-',
+                    'Inventor 1' => $ip->inventors1 ?? '-',
+                    'Inventor 2' => $ip->inventors2 ?? '-',
+                    'Inventor 3' => $ip->inventors3 ?? '-',
+                    'Inventor 4' => $ip->inventors4 ?? '-',
+                    'Inventor 5' => $ip->inventors5 ?? '-',
+                    'Inventor 6' => $ip->inventors6 ?? '-',
+                    'Inventor 7' => $ip->inventors7 ?? '-',
+                    'Inventor 8' => $ip->inventors8 ?? '-',
+                    'Non Sivitas PRSDI' => $ip->nonprsdi_inventors ?? '-',
+                    'Status' => $ip->status ?? '-',
+                    'Jenis' => $ip->jenis ?? '-',
+                    'No Pendaftaran' => $ip->no_pendaftaran ?? '-',
+                    'Tanggal Daftar' => $ip->tanggal_daftar?->format('Y-m-d') ?? '-',
+                    'No Sertifikat' => $ip->no_sertifikat ?? '-',
+                    'Tanggal Sertifikasi' => $ip->tanggal_sertifikasi?->format('Y-m-d') ?? '-',
+                    'Link Upload' => $ip->link_upload ?? '-',
+                    'LINK Dokumen' => $ip->link_dokumen ?? '-',
                 ];
             });
 
-        // Ambil data PKS
-        $pksData = Document::where('document_type', 'pks')
-            ->with('user', 'pks')
-            ->latest()
+        // PKS
+        $pksData = DocumentPks::with('document')
             ->get()
-            ->map(function ($document) {
+            ->map(function ($pks) {
                 return [
-                    'NO' => $document->id,
-                    'Periode Input' => $document->created_at->format('Y-m-d'),
-                    'Periode Stamp' => $document->monev_stamp?->format('Y-m-d H:i') ?? '-',
-                    'JUDUL' => $document->title,
-                    'KELOMPOK RISET' => $document->kelompok_riset ?? '-',
-                    '1' => $document->pks->pic_prsdi[0] ?? '-',
-                    '2' => $document->pks->pic_prsdi[1] ?? '-',
-                    '3' => $document->pks->pic_prsdi[2] ?? '-',
-                    'NON SIVITAS PRSDI' => implode(', ', $document->pks->pic_nonprsdi ?? []) ?: '-',
-                    'TIPE' => $document->pks->tipe ?? '-',
-                    'JENIS' => $document->pks->jenis ?? '-',
-                    'SUMBER' => $document->pks->sumber ?? '-',
-                    'OUTPUT' => $document->pks->output ?? '-',
-                    'PIHAK K3' => $document->pks->pihak_k3 ?? '-',
-                    'NILAI' => $document->pks->nilai ?? '-',
-                    'KETERANGAN' => $document->pks->keterangan ?? '-',
-                    'NO KERJASAMA' => $document->pks->no_kerjasama ?? '-',
-                    'TANGGAL KERJASAMA' => $document->pks->tanggal_kerjasama?->format('Y-m-d') ?? '-',
-                    'NO PERJANJIAN' => $document->pks->no_perjanjian ?? '-',
-                    'TANGGAL PERJANJIAN' => $document->pks->tanggal_perjanjian?->format('Y-m-d') ?? '-',
-                    'LINK UPLOAD' => $document->pks->link_upload ?? '-',
-                    'STATUS UPLOAD' => $document->pks->status_upload ?? '-',
-                    'TAHUN PKS' => $document->pks->tahun_pks ?? '-',
-                    'LINK BUKTI DUKUNG' => $document->pks->link_bukti_dukung ?? '-',
-                    'CATATAN' => $document->pks->catatan ?? '-',
-                    'JUMLAH' => $document->pks->jumlah_keuangan ?? '-',
+                    'No' => $pks->id,
+                    'Periode Input' => $pks->document?->created_at?->format('Y-m-d') ?? '-',
+                    'Periode Stamp' => $pks->document?->monev_stamp?->format('Y-m-d H:i') ?? '-',
+                    'JUDUL' => $pks->document?->title ?? '-',
+                    'KELOMPOK RISET' => $pks->document?->kelompok_riset ?? '-',
+                    '1' => $pks->pic_prsdi1 ?? '-',
+                    '2' => $pks->pic_prsdi2 ?? '-',
+                    '3' => $pks->pic_prsdi3 ?? '-',
+                    'NON SIVITAS PRSDI' => $pks->pic_nonprsdi ?? '-',
+                    'TIPE' => $pks->tipe ?? '-',
+                    'JENIS' => $pks->jenis ?? '-',
+                    'SUMBER' => $pks->sumber ?? '-',
+                    'OUTPUT' => $pks->output ?? '-',
+                    'PIHAK K3' => $pks->pihak_k3 ?? '-',
+                    'NILAI' => $pks->nilai ?? '-',
+                    'KETERANGAN' => $pks->keterangan ?? '-',
+                    'NO KERJASAMA' => $pks->no_kerjasama ?? '-',
+                    'TANGGAL KERJASAMA' => $pks->tanggal_kerjasama?->format('Y-m-d') ?? '-',
+                    'NO PERJANJIAN' => $pks->no_perjanjian ?? '-',
+                    'TANGGAL PERJANJIAN' => $pks->tanggal_perjanjian?->format('Y-m-d') ?? '-',
+                    'LINK UPLOAD' => $pks->link_upload ?? '-',
+                    'STATUS UPLOAD' => $pks->status_upload ?? '-',
+                    'TAHUN PKS' => $pks->tahun_pks ?? '-',
+                    'LINK BUKTI DUKUNG' => $pks->link_bukti_dukung ?? '-',
+                    'CATATAN' => $pks->catatan ?? '-',
+                    'JUMLAH' => $pks->jumlah_keuangan ?? '-',
                 ];
             });
 
-        // Ambil data LoA Studi Lanjut
-        $furtherStudyData = Document::where('document_type', 'further_study')
-            ->with('user', 'furtherStudy')
-            ->latest()
+        // SDM Studi PRSDI (LoA Studi Lanjut)
+        $furtherStudyData = DocumentLoaStudiLanjut::with('document')
             ->get()
-            ->map(function ($document) {
+            ->map(function ($fs) {
                 return [
-                    'NO' => $document->id,
-                    'Periode Stamp' => $document->monev_stamp?->format('Y-m-d H:i') ?? '-',
-                    'NAMA SDM IPTEK' => $document->furtherStudy->nama_sdm_iptek ?? '-',
-                    'KELOMPOK RISET' => $document->kelompok_riset ?? '-',
-                    'JENJANG PENDIDIKAN DITEMPUH' => $document->furtherStudy->jenjang_pendidikan ?? '-',
-                    'NAMA UNIVERSITAS' => $document->furtherStudy->nama_universitas ?? '-',
-                    'STATUS' => $document->status,
-                    'KETERANGAN' => $document->furtherStudy->keterangan ?? '-',
-                    'UPLOAD DAKUNG' => $document->furtherStudy->upload_dakung ?? '-',
-                    'tahun masuk' => $document->furtherStudy->tahun_masuk ?? '-',
-                    'direct evidence' => $document->furtherStudy->direct_evidence ?? '-',
+                    'No' => $fs->id,
+                    'Periode Stamp' => $fs->document?->monev_stamp?->format('Y-m-d H:i') ?? '-',
+                    'NAMA SDM IPTEK' => $fs->nama_sdm_iptek ?? '-',
+                    'KELOMPOK RISET' => $fs->document?->kelompok_riset ?? '-',
+                    'JENJANG PENDIDIKAN DITEMPUH' => $fs->jenjang_pendidikan ?? '-',
+                    'NAMA UNIVERSITAS' => $fs->nama_universitas ?? '-',
+                    'STATUS' => $fs->status ?? '-',
+                    'KETERANGAN' => $fs->keterangan ?? '-',
+                    'UPLOAD DAKUNG' => $fs->upload_dakung ?? '-',
+                    'tahun masuk' => $fs->tahun_masuk ?? '-',
+                    'direct evidence' => $fs->direct_evidence ?? '-',
                 ];
             });
 
-        // Ambil data Pelatihan Luar Negeri
-        $overseasTrainingData = Document::where('document_type', 'overseas_training')
-            ->with('user', 'overseasTraining')
-            ->latest()
+        // PDVR (Pelatihan Luar Negeri)
+        $overseasTrainingData = DocumentPelatihanLuarNegeri::with('document')
             ->get()
-            ->map(function ($document) {
+            ->map(function ($ot) {
                 return [
-                    'NO' => $document->id,
-                    'Periode Stamp' => $document->monev_stamp?->format('Y-m-d H:i') ?? '-',
-                    'NAMA SDM PRSDI' => $document->overseasTraining->nama_sdm_prsdi ?? '-',
-                    'NON SDM PRSDI' => $document->overseasTraining->non_sdm_prsdi ?? '-',
-                    'KELOMPOK RISET' => $document->kelompok_riset ?? '-',
-                    'STATUS' => $document->status,
-                    'JENIS' => $document->overseasTraining->jenis ?? '-',
-                    'KETERANGAN' => $document->overseasTraining->keterangan ?? '-',
-                    'UPLOAD DAKUNG' => $document->overseasTraining->upload_dakung ?? '-',
-                    'direct link' => $document->overseasTraining->direct_link ?? '-',
+                    'No' => $ot->id,
+                    'Periode Stamp' => $ot->document?->monev_stamp?->format('Y-m-d H:i') ?? '-',
+                    'NAMA SDM PRSDI' => $ot->nama_sdm_prsdi ?? '-',
+                    'NON SDM PRSDI' => $ot->non_sdm_prsdi ?? '-',
+                    'KELOMPOK RISET' => $ot->kelompok_riset ?? '-',
+                    'STATUS' => $ot->status ?? '-',
+                    'JENIS' => $ot->jenis ?? '-',
+                    'KETERANGAN' => $ot->keterangan ?? '-',
+                    'UPLOAD DAKUNG' => $ot->upload_dakung ?? '-',
+                    'direct link' => $ot->direct_link ?? '-',
                 ];
             });
 
-        // Ambil data Purwarupa (jika termasuk KI dengan jenis Purwarupa)
-        $purwarupaData = Document::where('document_type', 'intellectual_property')
-            ->with('user', 'intellectualProperty')
-            ->whereHas('intellectualProperty', function ($q) {
-                $q->where('jenis', 'Purwarupa');
-            })
-            ->latest()
+        // Purwarupa
+        $purwarupaData = DocumentPurwarupa::with('document')
             ->get()
-            ->map(function ($document) {
+            ->map(function ($purwarupa) {
                 return [
-                    'NO' => $document->id,
-                    'Periode Input' => $document->created_at->format('Y-m-d'),
-                    'Periode Stamp' => $document->monev_stamp?->format('Y-m-d H:i') ?? '-',
-                    'Judul Purwarupa' => $document->title,
-                    'KELOMPOK RISET' => $document->kelompok_riset ?? '-',
-                    'Inventor 1' => $document->intellectualProperty->inventors[0] ?? '-',
-                    'Inventor 2' => $document->intellectualProperty->inventors[1] ?? '-',
-                    'Inventor 3' => $document->intellectualProperty->inventors[2] ?? '-',
-                    'Inventor 4' => $document->intellectualProperty->inventors[3] ?? '-',
-                    'Inventor 5' => $document->intellectualProperty->inventors[4] ?? '-',
-                    'NON SIVITAS PRSDI' => implode(', ', $document->intellectualProperty->nonprsdi_inventors ?? []) ?: '-',
-                    'JENIS' => $document->intellectualProperty->jenis ?? '-',
-                    'STATUS' => $document->intellectualProperty->status ?? '-',
-                    'NAMA MITRA' => '-',
-                    'UPLOAD GDRIVE' => $document->intellectualProperty->link_upload ?? '-',
-                    'LINK' => $document->intellectualProperty->link_dokumen ?? '-',
+                    'No' => $purwarupa->id,
+                    'Periode Input' => $purwarupa->document?->created_at?->format('Y-m-d') ?? '-',
+                    'Periode Stamp' => $purwarupa->document?->monev_stamp?->format('Y-m-d H:i') ?? '-',
+                    'Judul Purwarupa' => $purwarupa->judul_purwarupa ?? '-',
+                    'KELOMPOK RISET' => $purwarupa->kelompok_riset ?? '-',
+                    'Inventor 1' => $purwarupa->inventor1 ?? '-',
+                    'Inventor 2' => $purwarupa->inventor2 ?? '-',
+                    'Inventor 3' => $purwarupa->inventor3 ?? '-',
+                    'Inventor 4' => $purwarupa->inventor4 ?? '-',
+                    'Inventor 5' => $purwarupa->inventor5 ?? '-',
+                    'NON SIVITAS PRSDI' => $purwarupa->non_sivitas_prsdi ?? '-',
+                    'JENIS' => $purwarupa->jenis ?? '-',
+                    'STATUS' => $purwarupa->status ?? '-',
+                    'NAMA MITRA' => $purwarupa->nama_mitra ?? '-',
+                    'UPLOAD GDRIVE' => $purwarupa->upload_gdrive ?? '-',
+                    'LINK' => $purwarupa->link ?? '-',
                 ];
             });
 

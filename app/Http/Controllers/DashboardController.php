@@ -80,7 +80,6 @@ class DashboardController extends Controller
         $detailPublications = Document::where('document_type', 'publication')
             ->with('user', 'publication')
             ->latest()
-            ->limit(2)
             ->get()
             ->map(function ($document) {
                 return [

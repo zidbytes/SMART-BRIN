@@ -9,44 +9,56 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DocumentPks extends Model
 {
     use HasFactory;
-    
-    // Nama tabel berbeda dari konvensi, jadi kita definisikan secara eksplisit
+
+    /**
+     * Nama tabel yang terhubung dengan model.
+     */
     protected $table = 'document_pks';
 
+    /**
+     * Atribut yang bisa diisi secara massal.
+     */
     protected $fillable = [
-        'document_id', 
-        'judul', 
+        'document_id',
+        'judul',
+        'kelompok_riset',
         'pic_prsdi1',
-        'pic_prsdi2', 
-        'pic_prsdi3', 
-        'pic_nonprsdi',  
-        'tipe', 
-        'jenis', 
-        'sumber', 
+        'pic_prsdi2',
+        'pic_prsdi3',
+        'pic_nonprsdi',
+        'tipe',
+        'jenis',
+        'sumber',
         'output',
-        'pihak_k3', 
-        'nilai', 
-        'keterangan', 
-        'no_kerjasama', 
+        'pihak_k3',
+        'nilai',
+        'keterangan',
+        'no_kerjasama',
         'tanggal_kerjasama',
-        'no_perjanjian', 
-        'tanggal_perjanjian', 
-        'link_upload', 
+        'no_perjanjian',
+        'tanggal_perjanjian',
+        'link_upload',
         'status_upload',
         'tahun_pks',
-        'link_bukti_dukung', 
-        'catatan', 
+        'link_bukti_dukung',
+        'catatan',
         'jumlah_keuangan',
     ];
 
+    /**
+     * Casting tipe data untuk atribut.
+     */
     protected $casts = [
-        'pic_prsdi' => 'array',
         'nilai' => 'double',
         'jumlah_keuangan' => 'double',
-        'tanggal_kerjasama' => 'date',
-        'tanggal_perjanjian' => 'date',
+        'tanggal_kerjasama' => 'datetime',
+        'tanggal_perjanjian' => 'datetime',
+        'tahun_pks' => 'integer', 
     ];
 
+    /**
+     * Relasi ke model Document.
+     */
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);

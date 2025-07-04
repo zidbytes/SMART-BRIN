@@ -10,6 +10,17 @@ class UsersTableSeeder extends Seeder
 {
     public function run(): void
     {
+
+        User::firstOrCreate(
+            ['email' => 'pic.external@brin.go.id'],
+            [
+                'name'           => 'PIC Eksternal / Umum',
+                'password'       => Hash::make('password'),
+                'research_group' => 'Unassigned',
+                'role'           => 'researcher'
+            ]
+        );
+
         $users = [
             ['name'=>'Muh. Hafizh Izzaturrahim, S.Kom.','research_group'=>'Information Retrieval'],
             ['name'=>'Andria Arisal, M. Eng.','research_group'=>'Information Retrieval'],
@@ -62,6 +73,11 @@ class UsersTableSeeder extends Seeder
             ['name'=>'Prof Hwang','research_group'=>'Human Computer Interaction and Visualisation'],
             ['name'=>"Iftitahu Ni'mah, S.Kom., M.I.T.",'research_group'=>'Natural Language Processing'],
             ['name'=>'Rifani Bhakti Natari','research_group'=>'Information Retrieval'],
+            ['name'=>'Prabu Kresna Putra, S.T., M.T.I.','research_group'=>'Natural Language Processing'],
+            ['name'=>'Ekawati Marlina, S.T., M.T.','research_group'=>'Digital Government'],
+            ['name'=>'Dr. Ambar Yoganingrum','research_group'=>'Human Computer Interaction and Visualisation'],
+            ['name'=>'Dr. DIPL. ING (FH) Anne Parlina, M.P.','research_group'=>'Information Retrieval'],
+            ['name'=>'Mochammad Fikri, S.Kom','research_group'=>'Digital Government'],
         ];
 
         foreach ($users as $u) {

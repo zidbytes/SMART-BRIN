@@ -16,6 +16,7 @@ return new class extends Migration
             $t->foreignId('document_id')
             ->constrained('documents')->onDelete('cascade');
             $t->string('judul')->nullable();
+            $t->string('kelompok_riset')->nullable();
             $t->string('pic_prsdi1')->nullable();
             $t->string('pic_prsdi2')->nullable(); 
             $t->string('pic_prsdi3')->nullable(); 

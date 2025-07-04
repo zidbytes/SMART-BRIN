@@ -6,28 +6,33 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class DocumentPelatihanLuarNegeri extends Model
+class DocumentPurwarupa extends Model
 {
     use HasFactory;
 
     /**
      * Nama tabel yang terhubung dengan model.
      */
-    protected $table = 'document_pelatihan_luar_negeris';
+    protected $table = 'document_purwarupas';
 
     /**
      * Atribut yang bisa diisi secara massal.
      */
     protected $fillable = [
         'document_id',
-        'nama_sdm_prsdi',
-        'non_sdm_prsdi',
+        'judul_purwarupa',
         'kelompok_riset', 
-        'status',         
+        'inventor1',
+        'inventor2',
+        'inventor3',
+        'inventor4',
+        'inventor5',
+        'non_sivitas_prsdi',
         'jenis',
-        'keterangan',
-        'upload_dakung',
-        'direct_link',
+        'status',
+        'nama_mitra',
+        'upload_gdrive',
+        'link',
     ];
 
     /**

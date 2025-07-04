@@ -10,25 +10,48 @@ class DocumentKekayaanIntelektual extends Model
 {
     use HasFactory;
 
+    /**
+     * Nama tabel yang terhubung dengan model.
+     */
+    protected $table = 'document_kekayaan_intelektuals';
+
+    /**
+     * Atribut yang bisa diisi secara massal.
+     */
     protected $fillable = [
-        'document_id', 
-        'inventors', 
+        'document_id',
+        'judul_ki',
+        'kelompok_riset',
         'status',
-        'jenis', 
-        'no_pendaftaran', 
+        'inventors1',
+        'inventors2',
+        'inventors3',
+        'inventors4',
+        'inventors5',
+        'inventors6',
+        'inventors7',
+        'inventors8',
+        'nonprsdi_inventors',
+        'jenis',
+        'no_pendaftaran',
         'tanggal_daftar',
-        'no_sertifikat', 
-        'tanggal_sertifikasi', 
-        'link_upload', 
+        'no_sertifikat',
+        'tanggal_sertifikasi',
+        'link_upload',
         'link_dokumen',
     ];
 
+    /**
+     * Casting tipe data untuk atribut.
+     */
     protected $casts = [
-        'inventors' => 'array',
-        'tanggal_daftar' => 'date',
-        'tanggal_sertifikasi' => 'date',
+        'tanggal_daftar' => 'datetime',
+        'tanggal_sertifikasi' => 'datetime',
     ];
 
+    /**
+     * Relasi ke model Document.
+     */
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);

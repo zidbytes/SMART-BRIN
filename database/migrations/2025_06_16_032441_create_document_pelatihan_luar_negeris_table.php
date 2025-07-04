@@ -17,6 +17,8 @@
                 ->constrained('documents')->onDelete('cascade');
                 $t->string('nama_sdm_prsdi')->nullable();
                 $t->string('non_sdm_prsdi')->nullable();
+                $t->string('kelompok_riset')->nullable();
+                $t->string('status')->nullable();
                 $t->string('jenis')->nullable();
                 $t->text('keterangan')->nullable();
                 $t->string('upload_dakung')->nullable();
