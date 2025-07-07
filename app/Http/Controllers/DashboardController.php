@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\DocumentPublication;
+use App\Models\TargetTahunan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +93,22 @@ class DashboardController extends Controller
                 ];
             });
 
+        // --- Target Tahunan untuk tahun ini ---
+        $currentYear = date('Y');
+        $target = TargetTahunan::where('tahun', $currentYear)->first();
+        
+        // Debug: Log jika target tidak ditemukan
+        if (!$target) {
+            \Log::info("Target untuk tahun {$currentYear} tidak ditemukan");
+            // Coba ambil target tahun terbaru sebagai fallback
+            $target = TargetTahunan::orderBy('tahun', 'desc')->first();
+            if ($target) {
+                \Log::info("Menggunakan target tahun {$target->tahun} sebagai fallback");
+            }
+        } else {
+            \Log::info("Target untuk tahun {$currentYear} ditemukan: " . json_encode($target->toArray()));
+        }
+
         return Inertia::render('dashboard', [
             'kpi' => [
                 'totalPublications' => $totalPublications,
@@ -99,6 +116,7 @@ class DashboardController extends Controller
                 'publicationAuthorsCount' => $publicationAuthorsCount,
                 'activeResearchers' => $activeResearchers,
             ],
+            'target' => $target,
             'charts' => [
                 'publicationsTrend' => $publicationsTrend,
                 'publicationTypes' => $publicationTypes,

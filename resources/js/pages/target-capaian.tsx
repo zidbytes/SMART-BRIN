@@ -46,6 +46,7 @@ const indikatorList = [
 export default function TargetCapaian({ targets, success, auth }: Props) {
     const [filterYear, setFilterYear] = useState(new Date().getFullYear());
     const [isEditPopupVisible, setEditPopupVisible] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [editForm, setEditForm] = useState(() =>
         Object.fromEntries(indikatorList.map(i => [i.key, '']))
     );
@@ -57,10 +58,59 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('Form submitted with data:', { tahun: editTahun, ...editForm }); // Debug log
+        
+        if (isSubmitting) return; // Prevent double submission
+        
+        // Validate that all required fields are filled
+        const emptyFields = indikatorList.filter(indikator => 
+            !editForm[indikator.key] || editForm[indikator.key].trim() === ''
+        );
+        
+        if (emptyFields.length > 0) {
+            alert(`Mohon isi semua field yang diperlukan: ${emptyFields.map(f => f.label).join(', ')}`);
+            return;
+        }
+        
         const targetToEdit = targets.find(t => t.tahun === filterYear);
+        setIsSubmitting(true);
+        
         if (targetToEdit) {
-            router.put(`/target-tahunan/update/${targetToEdit.id}`, { tahun: editTahun, ...editForm });
-            setEditPopupVisible(false);
+            // Update existing target
+            console.log('Updating target with ID:', targetToEdit.id); // Debug log
+            router.put(`/target-tahunan/update/${targetToEdit.id}`, 
+                { tahun: editTahun, ...editForm },
+                {
+                    onSuccess: () => {
+                        console.log('Update successful');
+                        setIsSubmitting(false);
+                        setEditPopupVisible(false);
+                    },
+                    onError: (errors) => {
+                        console.error('Update failed:', errors);
+                        setIsSubmitting(false);
+                        alert('Gagal menyimpan data. Silakan coba lagi.');
+                    }
+                }
+            );
+        } else {
+            // Create new target
+            console.log('Creating new target for year:', editTahun); // Debug log
+            router.post(`/target-tahunan`, 
+                { tahun: editTahun, ...editForm },
+                {
+                    onSuccess: () => {
+                        console.log('Create successful');
+                        setIsSubmitting(false);
+                        setEditPopupVisible(false);
+                    },
+                    onError: (errors) => {
+                        console.error('Create failed:', errors);
+                        setIsSubmitting(false);
+                        alert('Gagal menyimpan data. Silakan coba lagi.');
+                    }
+                }
+            );
         }
     };
 
@@ -170,6 +220,7 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                 onClick={() => {
                                     const latestTarget = targets.find(t => t.tahun === filterYear);
                                     if (latestTarget) {
+                                        // Edit existing target
                                         setEditTahun(latestTarget.tahun);
                                         setEditForm(
                                             Object.fromEntries(
@@ -179,11 +230,19 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                                 ])
                                             )
                                         );
+                                    } else {
+                                        // Create new target for this year
+                                        setEditTahun(filterYear);
+                                        setEditForm(
+                                            Object.fromEntries(
+                                                indikatorList.map(indikator => [indikator.key, ''])
+                                            )
+                                        );
                                     }
                                     setEditPopupVisible(true);
                                 }}
                             >
-                                Ubah Target
+                                {targets.find(t => t.tahun === filterYear) ? 'Ubah Target' : 'Tambah Target'}
                             </button>
                         </div>
                     )}
@@ -193,7 +252,9 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                             <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold text-[#E62F2A]">Ubah Target Tahunan</h2>
+                                    <h2 className="text-2xl font-bold text-[#E62F2A]">
+                                        {targets.find(t => t.tahun === filterYear) ? 'Ubah Target Tahunan' : 'Tambah Target Tahunan'}
+                                    </h2>
                                     <button
                                         type="button"
                                         className="text-gray-500 hover:text-gray-700"
@@ -238,9 +299,14 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                         </button>
                                         <button
                                             type="submit"
-                                            className="bg-[#E62F2A] text-white px-6 py-2 rounded-lg hover:bg-red-600 transition"
+                                            disabled={isSubmitting}
+                                            className={`px-6 py-2 rounded-lg transition ${
+                                                isSubmitting 
+                                                    ? 'bg-gray-400 cursor-not-allowed' 
+                                                    : 'bg-[#E62F2A] hover:bg-red-600'
+                                            } text-white`}
                                         >
-                                            Simpan
+                                            {isSubmitting ? 'Menyimpan...' : 'Simpan'}
                                         </button>
                                     </div>
                                 </form>

@@ -1,92 +1,48 @@
+// "use client" // Tambahkan ini jika file ini berada di lingkungan Next.js App Router
+
 import React, { useState } from 'react';
 import { ChevronDown, TrendingUp } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Label, Pie, PieChart, Sector, Cell } from 'recharts';
-import { PieSectorDataItem } from 'recharts/types/polar/Pie';
+import { PieSectorDataItem } from "recharts/types/polar/Pie"
 
-// Mock versions of shadcn chart components
-interface ChartConfig {
-  [key: string]: {
-    label: string;
-    color?: string;
-  }
-}
+// Import komponen Shadcn UI yang sebenarnya
+// Pastikan path ini sesuai dengan struktur proyek Anda
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    CardFooter,
+} from "@/components/ui/card"
+import {
+    ChartConfig,
+    ChartContainer,
+    ChartStyle,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart" // <-- Path ini memerlukan shadcn-ui add chart
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  // Create CSS variables for the chart colors
-  const colorVars = Object.entries(config)
-    .filter(([, value]) => value.color)
-    .map(([key, value]) => `--color-${key}: ${value.color};`)
-    .join(' ');
-
-  return <div id={`chart-style-${id}`} style={{ display: 'none' }} data-styles={colorVars}></div>;
-};
-
-const ChartContainer = ({ 
-  id, 
-  className,
-  children 
-}: { 
-  id: string; 
-  config?: ChartConfig;
-  className?: string;
-  children: React.ReactNode;
-}) => {
-  return (
-    <div id={`chart-container-${id}`} className={className}>
-      {children}
-    </div>
-  );
-};
-
-// Using actual imports as requested
+// Menggunakan import aktual seperti yang diminta
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import patternBg from '../assets/bg-pattern3.png'; // Import background pattern
 
-// Shadcn UI Card component mockup
-const Card = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <div className={`rounded-xl border bg-white ${className}`}>
-        {children}
-    </div>
-);
-
-// Shadcn UI CardContent component mockup
-const CardContent = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <div className={`p-4 ${className}`}>
-        {children}
-    </div>
-);
-
-// Shadcn UI CardHeader component mockup
-const CardHeader = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <div className={`p-6 pb-0 ${className}`}>
-        {children}
-    </div>
-);
-
-// Shadcn UI CardTitle component mockup
-const CardTitle = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <h3 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
-        {children}
-    </h3>
-);
-
-// Shadcn UI CardDescription component mockup
-const CardDescription = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <p className={`text-sm text-gray-500 ${className}`}>
-        {children}
-    </p>
-);
-
-// Shadcn UI CardFooter component mockup
-const CardFooter = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <div className={`p-6 pt-0 ${className}`}>
-        {children}
-    </div>
-);
-
-// Shadcn UI Tabs components mockup
+// Shadcn UI Tabs components mockup (mempertahankan ini karena Anda membuatnya sendiri)
 interface TabsProps {
     defaultValue: string;
     className?: string;
@@ -98,14 +54,12 @@ const Tabs = ({ defaultValue, className, children }: TabsProps) => {
     return (
         <div className={className}>
             {React.Children.map(children, child => {
-                // Fix 3: Explicitly type child before cloning
                 if (React.isValidElement(child) && child.type === TabsList) {
                     return React.cloneElement(child as React.ReactElement<TabsListProps>, { activeTab, setActiveTab });
                 }
                 return child;
             })}
             {React.Children.map(children, child => {
-                // Fix 3: Explicitly type child before cloning
                 if (React.isValidElement(child) && child.type === TabsContent) {
                     return React.cloneElement(child as React.ReactElement<TabsContentProps>, { activeTab });
                 }
@@ -125,11 +79,10 @@ interface TabsListProps {
 const TabsList = ({ activeTab, setActiveTab, className, children }: TabsListProps) => (
     <div className={`flex p-1 rounded-xl shadow border bg-white ${className}`}>
         {React.Children.map(children, child =>
-            // Fix 3 & 4: Explicitly type child before cloning and access props
             (React.isValidElement(child) && child.type === TabsTrigger)
                 ? React.cloneElement(child as React.ReactElement<TabsTriggerProps>, {
-                    isActive: (child.props as TabsTriggerProps).value === activeTab, // Accessing child.props.value after type assertion
-                    onClick: () => setActiveTab((child.props as TabsTriggerProps).value) // Accessing child.props.value after type assertion
+                    isActive: (child.props as TabsTriggerProps).value === activeTab,
+                    onClick: () => setActiveTab((child.props as TabsTriggerProps).value)
                 })
                 : child
         )}
@@ -137,11 +90,9 @@ const TabsList = ({ activeTab, setActiveTab, className, children }: TabsListProp
 );
 
 interface TabsTriggerProps {
-    // Fix 1.2: Rename 'value' to '_value' to explicitly mark as unused if not directly consumed in component JSX
     value: string;
     className?: string;
     children: React.ReactNode;
-    // Fix 5: Make isActive and onClick optional as they are injected by the parent TabsList
     isActive?: boolean;
     onClick?: () => void;
 }
@@ -167,80 +118,6 @@ const TabsContent = ({ value, activeTab, className, children }: TabsContentProps
         {children}
     </div>
 );
-
-// Shadcn UI DropdownMenu components mockup
-interface DropdownMenuProps {
-    children: React.ReactNode;
-}
-
-const DropdownMenu = ({ children }: DropdownMenuProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-        <div className="relative">
-            {React.Children.map(children, child => {
-                // Fix 3: Explicitly type child before cloning
-                if (React.isValidElement(child) && child.type === DropdownMenuTrigger) {
-                    return React.cloneElement(child as React.ReactElement<DropdownMenuTriggerProps>, { onClick: () => setIsOpen(!isOpen) });
-                }
-                // Fix 3: Explicitly type child before cloning
-                if (React.isValidElement(child) && child.type === DropdownMenuContent) {
-                    return isOpen ? React.cloneElement(child as React.ReactElement<DropdownMenuContentProps>, { setIsOpen }) : null;
-                }
-                return child;
-            })}
-        </div>
-    );
-};
-
-interface DropdownMenuTriggerProps {
-    onClick?: () => void;
-    asChild?: boolean;
-    children: React.ReactNode;
-}
-
-const DropdownMenuTrigger = ({ onClick, asChild, children }: DropdownMenuTriggerProps) => {
-    if (asChild && React.isValidElement(children)) {
-        // Fix 3: Explicitly type children as React.ReactElement<any> to allow onClick to be spread
-        return React.cloneElement(children as React.ReactElement<{ onClick?: () => void }>, { onClick: onClick });
-    }
-    return <button onClick={onClick} className="border rounded px-2 py-1 text-sm bg-white flex items-center gap-1">
-        {children} <ChevronDown size={16} />
-    </button>;
-};
-
-interface DropdownMenuContentProps {
-    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    children: React.ReactNode;
-}
-
-const DropdownMenuContent = ({ setIsOpen, children }: DropdownMenuContentProps) => (
-    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-        <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-            {React.Children.map(children, child =>
-                // Fix 3: Explicitly type child before cloning
-                (React.isValidElement(child) && child.type === DropdownMenuItem)
-                    ? React.cloneElement(child as React.ReactElement<DropdownMenuItemProps>, { onClick: () => setIsOpen(false) })
-                    : child
-            )}
-        </div>
-    </div>
-);
-
-interface DropdownMenuItemProps {
-    onClick?: () => void;
-    children: React.ReactNode;
-}
-
-const DropdownMenuItem = ({ onClick, children }: DropdownMenuItemProps) => (
-    <button
-        onClick={onClick}
-        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-        role="menuitem"
-    >
-        {children}
-    </button>
-);
-
 
 // Real Chart Components using database data
 interface ChartPlaceholderProps {
@@ -287,7 +164,7 @@ const PublicationLineChart = ({ title, data, className, dropdown = false }: Line
                                     {selectedYear} <ChevronDown size={16} />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent setIsOpen={() => { }}>
+                            <DropdownMenuContent >
                                 <DropdownMenuItem onClick={() => setSelectedYear('2024')}>2024</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setSelectedYear('2023')}>2023</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setSelectedYear('2022')}>2022</DropdownMenuItem>
@@ -309,7 +186,7 @@ const PublicationLineChart = ({ title, data, className, dropdown = false }: Line
                                     bottom: 20,
                                 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <CartesianGrid strokeDashArray="3 3" stroke="#f0f0f0" />
                                 <XAxis 
                                     dataKey="month" 
                                     stroke="#6b7280"
@@ -388,335 +265,6 @@ const PublicationLineChart = ({ title, data, className, dropdown = false }: Line
     );
 };
 
-// Pie Chart Component for Publication Types - Kept for reference but not used
-// interface PieChartProps {
-//     title: string;
-//     data: { jenis: string; count: number }[];
-//     className?: string;
-// }
-
-// const PieChart = ({ title, data, className }: PieChartProps) => {
-//     const total = data.reduce((sum, item) => sum + item.count, 0);
-//     const colors = ['#E62F2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57'];
-//     
-//     // Calculate angles for pie slices
-//     let currentAngle = 0;
-//     const slices = data.map((item, index) => {
-//         const percentage = (item.count / total) * 100;
-//         const angle = (item.count / total) * 360;
-//         const startAngle = currentAngle;
-//         const endAngle = currentAngle + angle;
-//         currentAngle += angle;
-//         
-//         // Calculate path for pie slice
-//         const radius = 100;
-//         const centerX = 140;
-//         const centerY = 140;
-//         
-//         const startAngleRad = (startAngle * Math.PI) / 180;
-//         const endAngleRad = (endAngle * Math.PI) / 180;
-//         
-//         const x1 = centerX + radius * Math.cos(startAngleRad);
-//         const y1 = centerY + radius * Math.sin(startAngleRad);
-//         const x2 = centerX + radius * Math.cos(endAngleRad);
-//         const y2 = centerY + radius * Math.sin(endAngleRad);
-//         
-//         const largeArcFlag = angle > 180 ? 1 : 0;
-//         
-//         const pathData = [
-//             `M ${centerX} ${centerY}`,
-//             `L ${x1} ${y1}`,
-//             `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-//             'Z'
-//         ].join(' ');
-//         
-//         return {
-//             pathData,
-//             color: colors[index % colors.length],
-//             percentage: percentage.toFixed(1),
-//             label: item.jenis,
-//             count: item.count
-//         };
-//     });
-//     
-//     return (
-//         <Card className={`shadow-lg rounded-xl ${className}`}>
-//             <CardContent className="p-4">
-//                 <div className="font-bold mb-4 text-[#E62F2A]">{title}</div>
-//                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-//                     {data.length > 0 ? (
-//                         <>
-//                             {/* Pie Chart SVG */}
-//                             <div className="flex-shrink-0 w-full lg:w-auto flex justify-center">
-//                                 <svg width="280" height="280" viewBox="0 0 280 280" className="max-w-full h-auto">
-//                                     {slices.map((slice, index) => (
-//                                         <path
-//                                             key={index}
-//                                             d={slice.pathData}
-//                                             fill={slice.color}
-//                                             stroke="white"
-//                                             strokeWidth="2"
-//                                         />
-//                                     ))}
-//                                 </svg>
-//                             </div>
-//                             
-//                             {/* Legend */}
-//                             <div className="flex flex-col gap-3 w-full lg:w-auto lg:ml-6 lg:min-w-[200px]">
-//                                 {slices.map((slice, index) => (
-//                                     <div key={index} className="flex items-center gap-3">
-//                                         <div
-//                                             className="w-4 h-4 rounded-full flex-shrink-0"
-//                                             style={{ backgroundColor: slice.color }}
-//                                         />
-//                                         <div className="text-sm flex-1">
-//                                             <div className="font-medium text-gray-700">{slice.label}</div>
-//                                             <div className="text-gray-500">{slice.count} ({slice.percentage}%)</div>
-//                                         </div>
-//                                     </div>
-//                                 ))}
-//                             </div>
-//                         </>
-//                     ) : (
-//                         <div className="flex items-center justify-center w-full h-48 bg-gray-50 rounded-md border border-dashed text-gray-400">
-//                             <span>No data available</span>
-//                         </div>
-//                     )}
-//                 </div>
-//             </CardContent>
-//         </Card>
-//     );
-// };
-
-const PieChartPlaceholder = ({ title, className, data = [] }: ChartPlaceholderProps & { data?: { jenis: string; count: number }[] }) => {
-    // Transform data to the format expected by the interactive pie chart
-    const chartData = React.useMemo(() => {
-        return data.length > 0 ? 
-            data.map((item) => ({
-                name: item.jenis,
-                value: item.count
-            })) : 
-            [
-                { name: "jurnal", value: 186 },
-                { name: "prosiding", value: 305 },
-                { name: "buku", value: 237 },
-                { name: "lainnya", value: 173 }
-            ];
-    }, [data]);
-    
-    const id = "pie-interactive";
-    
-    // Define color palette
-    const colors = React.useMemo(() => ({
-        jurnal: "#E62F2A",       // primary
-        prosiding: "#FF6B6B",    // secondary
-        buku: "#4ECDC4",         // tertiary
-        lainnya: "#45B7D1",      // quaternary
-        "grant-riset": "#96CEB4", // fifth
-        "hibah": "#FECA57"       // sixth
-    }), []);
-    
-    // Create chart config from the data
-    const chartConfig = React.useMemo(() => {
-        const config: Record<string, { label: string; color?: string }> = {};
-        
-        // Add entry for each category
-        chartData.forEach((item) => {
-            const categoryName = item.name.toLowerCase();
-            config[categoryName] = {
-                label: item.name,
-                color: colors[categoryName as keyof typeof colors] || 
-                       Object.values(colors)[chartData.indexOf(item) % Object.values(colors).length]
-            };
-        });
-        
-        return config;
-    }, [chartData, colors]);
-    
-    const [activeCategory, setActiveCategory] = React.useState(chartData.length > 0 ? chartData[0].name : '');
-    
-    const activeIndex = React.useMemo(
-        () => chartData.findIndex((item) => item.name === activeCategory),
-        [activeCategory, chartData]
-    );
-    
-    // Custom tooltip content
-    const customTooltipContent = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; }> }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-white p-3 border rounded-lg shadow-lg">
-                    <p className="font-medium text-gray-700">{payload[0].name}</p>
-                    <p className="text-[#E62F2A]">
-                        {payload[0].value.toLocaleString()}
-                    </p>
-                </div>
-            );
-        }
-        return null;
-    };
-    
-    // Custom active shape for the pie chart
-    const renderActiveShape = (props: PieSectorDataItem) => {
-        const {
-            cx = 0,
-            cy = 0,
-            innerRadius = 0,
-            outerRadius = 0,
-            startAngle = 0,
-            endAngle = 0,
-            fill = '#E62F2A'
-        } = props;
-        
-        return (
-            <g>
-                <Sector
-                    cx={cx}
-                    cy={cy}
-                    innerRadius={innerRadius}
-                    outerRadius={outerRadius + 10}
-                    startAngle={startAngle}
-                    endAngle={endAngle}
-                    fill={fill}
-                />
-                <Sector
-                    cx={cx}
-                    cy={cy}
-                    startAngle={startAngle}
-                    endAngle={endAngle}
-                    innerRadius={outerRadius + 12}
-                    outerRadius={outerRadius + 20}
-                    fill={fill}
-                />
-            </g>
-        );
-    };
-    
-    return (
-        <Card data-chart={id} className={`flex flex-col shadow-lg rounded-xl ${className}`}>
-            <ChartStyle id={id} config={chartConfig} />
-            
-            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6 px-6">
-                <div className="space-y-1">
-                    <CardTitle className="text-lg font-semibold text-[#E62F2A]">{title}</CardTitle>
-                    <CardDescription>Januari - Desember 2024</CardDescription>
-                </div>
-                
-                <div className="ml-auto flex items-center space-x-2">
-                    <div className="relative inline-block">
-                        <select
-                            value={activeCategory}
-                            onChange={(e) => setActiveCategory(e.target.value)}
-                            className="h-8 w-[130px] rounded-md pl-3 pr-8 text-sm border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#E62F2A]"
-                            style={{
-                                background: `linear-gradient(90deg, ${chartConfig[activeCategory.toLowerCase()]?.color || '#E62F2A'}22 0%, transparent 100%)`
-                            }}
-                        >
-                            {chartData.map((item) => {
-                                const categoryKey = item.name.toLowerCase();
-                                const color = chartConfig[categoryKey]?.color;
-                                
-                                return (
-                                    <option 
-                                        key={item.name} 
-                                        value={item.name}
-                                        style={{color: color}}
-                                    >
-                                        {item.name}
-                                    </option>
-                                );
-                            })}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                            <ChevronDown size={14} className="text-gray-500" />
-                        </div>
-                    </div>
-                </div>
-            </CardHeader>
-            
-            <CardContent className="flex flex-1 items-center justify-center p-6 pt-0 pb-6">
-                <ChartContainer id={id} config={chartConfig} className="mx-auto aspect-square w-full max-w-[300px]">
-                    {chartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Tooltip 
-                                    cursor={false}
-                                    content={customTooltipContent}
-                                />
-                                <Pie
-                                    data={chartData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    paddingAngle={1}
-                                    activeShape={renderActiveShape}
-                                    isAnimationActive={true}
-                                    onMouseEnter={(_, index) => setActiveCategory(chartData[index].name)}
-                                >
-                                    {chartData.map((entry, index) => {
-                                        const categoryKey = entry.name.toLowerCase();
-                                        const color = chartConfig[categoryKey]?.color || 
-                                                       Object.values(colors)[index % Object.values(colors).length];
-                                        
-                                        return (
-                                            <Cell 
-                                                key={`cell-${index}`} 
-                                                fill={color} 
-                                                strokeWidth={0}
-                                            />
-                                        );
-                                    })}
-                                    <Label
-                                        content={({ viewBox }) => {
-                                            if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) {
-                                                return null;
-                                            }
-                                            
-                                            const { cx, cy } = viewBox as { cx: number, cy: number };
-                                            const activeItem = activeIndex >= 0 ? chartData[activeIndex] : null;
-                                            
-                                            return (
-                                                <text
-                                                    x={cx}
-                                                    y={cy}
-                                                    textAnchor="middle"
-                                                    dominantBaseline="central"
-                                                >
-                                                    <tspan
-                                                        x={cx}
-                                                        y={cy}
-                                                        className="text-3xl font-bold"
-                                                        fill="#000"
-                                                    >
-                                                        {activeItem ? activeItem.value.toLocaleString() : '0'}
-                                                    </tspan>
-                                                    <tspan
-                                                        x={cx}
-                                                        y={(cy || 0) + 24}
-                                                        fill="#6b7280"
-                                                        className="text-sm"
-                                                    >
-                                                        Total
-                                                    </tspan>
-                                                </text>
-                                            );
-                                        }}
-                                    />
-                                </Pie>
-                            </PieChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
-                            <span>No data available</span>
-                        </div>
-                    )}
-                </ChartContainer>
-            </CardContent>
-        </Card>
-    );
-};
 
 // Bar Chart Component for Scopus vs Non-Scopus
 interface BarChartProps {
@@ -856,7 +404,6 @@ interface DataTableColumn {
 }
 
 interface DataTableProps {
-    // Better typing for data
     data?: Array<Record<string, unknown>>;
     columns?: DataTableColumn[];
 }
@@ -1014,6 +561,17 @@ interface DashboardProps {
         publicationAuthorsCount: number;
         activeResearchers: number;
     };
+    target: {
+        publikasi_ilmiah_global: number;
+        kekayaan_intelektual: number;
+        purwarupa: number;
+        kerjasama_internasional: number;
+        kerjasama_nasional: number;
+        dana_eksternal: number;
+        sdm_studi_lanjut: number;
+        postdoc_visiting: number;
+        pelatihan_internasional: number;
+    } | null;
     charts: {
         publicationsTrend: { name: string; total: number }[];
         publicationTypes: { jenis: string; count: number }[];
@@ -1040,10 +598,14 @@ interface DashboardProps {
     };
 }
 
-export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) {
+export default function DashboardPRSDI({ kpi, target, charts, tables }: DashboardProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
     ];
+
+    // Debug: Log target data
+    console.log('Target data received:', target);
+    console.log('Target publikasi_ilmiah_global:', target?.publikasi_ilmiah_global);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -1068,16 +630,26 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                         <div className="font-bold text-lg text-[#E62F2A]">Total Publikasi</div>
                         <div className="flex items-end gap-2">
                             <span className="text-3xl font-bold text-neutral-700">{kpi.totalPublications.toLocaleString()}</span>
-                            <span className={`text-sm font-medium ${kpi.totalPublications >= 74 ? 'text-green-600' : 'text-red-600'}`}>
-                                {kpi.totalPublications >= 74 ? '+' : ''}{((kpi.totalPublications / 74) * 100 - 100).toFixed(1)}%
-                            </span>
+                            {target && target.publikasi_ilmiah_global > 0 && (
+                                <span className={`text-sm font-medium ${kpi.totalPublications >= target.publikasi_ilmiah_global ? 'text-green-600' : 'text-red-600'}`}>
+                                    {kpi.totalPublications >= target.publikasi_ilmiah_global ? '+' : ''}{((kpi.totalPublications / target.publikasi_ilmiah_global) * 100 - 100).toFixed(1)}%
+                                </span>
+                            )}
                         </div>
                         <div className="text-gray-500 text-xs">
-                            Capaian: {kpi.totalPublications} / 74 publikasi
+                            {target && target.publikasi_ilmiah_global > 0 ? (
+                                <>Capaian: {kpi.totalPublications} / {target.publikasi_ilmiah_global} publikasi</>
+                            ) : (
+                                <>Capaian: {kpi.totalPublications} publikasi (target belum ditetapkan)</>
+                            )}
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
                             <div className="bg-[#E62F2A] h-1.5 rounded-full transition-all"
-                                style={{ width: `${Math.min(100, (kpi.totalPublications / 74) * 100)}%` }}></div>
+                                style={{ 
+                                    width: target && target.publikasi_ilmiah_global > 0 
+                                        ? `${Math.min(100, (kpi.totalPublications / target.publikasi_ilmiah_global) * 100)}%` 
+                                        : '0%' 
+                                }}></div>
                         </div>
                     </div>
                     {/* Untuk Terindex Scopus */}
@@ -1111,9 +683,7 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
 
                 {/* Chart Tabs - Using Shadcn Tabs */}
                 <Tabs defaultValue="publikasi" className="w-full space-y-4">
-                    {/* Fix 5: Pass required props to TabsList */}
                     <TabsList activeTab={""} setActiveTab={() => { }} className="bg-white rounded-xl shadow border p-1 w-fit">
-                        {/* Fix 5: No longer need to pass isActive and onClick here directly, as they are now optional in TabsTriggerProps */}
                         <TabsTrigger value="publikasi" className="data-[state=active]:bg-[#E62F2A] data-[state=active]:text-white rounded-lg px-4 py-2">Publikasi</TabsTrigger>
                         <TabsTrigger value="ki" className="data-[state=active]:bg-[#E62F2A] data-[state=active]:text-white rounded-lg px-4 py-2">KI</TabsTrigger>
                         <TabsTrigger value="dana" className="data-[state=active]:bg-[#E62F2A] data-[state=active]:text-white rounded-lg px-4 py-2">Dana Eksternal</TabsTrigger>
@@ -1130,9 +700,10 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                             className="w-full min-h-[400px]" 
                             dropdown 
                         />
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <PieChartPlaceholder 
-                                title="Jenis Publikasi" 
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
+                            <ModifiedPieChartPlaceholder
+                                title="Jenis Publikasi"
                                 className="w-full min-h-[400px]"
                                 data={charts.publicationTypes}
                             />
@@ -1141,6 +712,16 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                                 data={charts.scopusData}
                                 className="w-full min-h-[400px]" 
                             />
+                            <ModifiedPieChartPlaceholder
+                                title="Status Publikasi"
+                                className="w-full min-h-[400px]"
+                                data={[
+                                    { jenis: "Published", count: 245 },
+                                    { jenis: "In Review", count: 89 },
+                                    { jenis: "Draft", count: 67 },
+                                    { jenis: "Rejected", count: 23 }
+                                ]}
+                            />
                         </div>
                     </TabsContent>
 
@@ -1148,7 +729,8 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                     <TabsContent value="ki" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <BarChartPlaceholder title="Jumlah KI per Kelompok Riset" className="w-full min-h-[400px]" />
-                            <PieChartPlaceholder title="Status KI" className="w-full min-h-[400px]" />
+                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
+                            <ModifiedPieChartPlaceholder title="Status KI" className="w-full min-h-[400px]" />
                         </div>
                     </TabsContent>
 
@@ -1161,7 +743,8 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                     {/* Tab Content: SDM Studi */}
                     <TabsContent value="sdm" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <PieChartPlaceholder title="Jenjang Studi SDM" className="w-full min-h-[400px]" />
+                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
+                            <ModifiedPieChartPlaceholder title="Jenjang Studi SDM" className="w-full min-h-[400px]" />
                             <BarChartPlaceholder title="Universitas Tujuan" className="w-full min-h-[400px]" />
                         </div>
                     </TabsContent>
@@ -1175,7 +758,8 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                     <TabsContent value="pdvr" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <BarChartPlaceholder title="Jumlah PDVR per Jenis" className="w-full min-h-[400px]" />
-                            <PieChartPlaceholder title="Keterlibatan SDM vs Non-SDM" className="w-full min-h-[400px]" />
+                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
+                            <ModifiedPieChartPlaceholder title="Keterlibatan SDM vs Non-SDM" className="w-full min-h-[400px]" />
                         </div>
                     </TabsContent>
                 </Tabs>
@@ -1190,7 +774,7 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                             { header: 'Judul', accessor: 'judul' },
                             { header: 'Catatan', accessor: 'catatan' },
                             { header: 'Tahun', accessor: 'tahun' },
-                            { header: 'Jenis', accessor: 'jenis' },
+                            { header: 'Jenis', accessor: 'jenis', },
                             { header: 'Status', accessor: 'status' },
                         ]} />
                     </CardContent>
@@ -1207,7 +791,7 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                             columns={[
                                 { header: 'No.', accessor: 'id' },
                                 { header: 'Periset', accessor: 'periset' },
-                                { header: 'Judul Publikasi', accessor: 'judul_publikasi' },
+                                { header: 'Judul Publikasi', accessor: 'judul_publikasi', },
                                 { header: 'Tahun', accessor: 'tahun' },
                                 { header: 'Jenis Publikasi', accessor: 'jenis' },
                                 { header: 'Status', accessor: 'status' },
@@ -1220,3 +804,250 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
         </AppLayout>
     );
 }
+
+// --- KOMPONEN PIECHARTPLACEHOLDER BARU YANG MENGGUNAKAN SHADCN UI ASLI ---
+// PASTIKAN HANYA ADA SATU DEKLARASI KOMPONEN INI DI SELURUH FILE
+const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlaceholderProps & { data?: { jenis: string; count: number }[] }) => {
+    // Transform data for Recharts, mirip desktopData dari contoh Shadcn
+    const chartData = React.useMemo(() => {
+        const defaultMockData = [
+            { name: "Jurnal", value: 186 },
+            { name: "Prosiding", value: 305 },
+            { name: "Buku", value: 237 },
+            { name: "Lainnya", value: 173 }
+        ];
+
+        const baseData = data.length > 0 ? data : defaultMockData.map(item => ({jenis: item.name, count: item.value}));
+
+        return baseData.map((item) => ({
+            name: item.jenis,
+            value: item.count,
+            // `fill` akan diambil dari variabel CSS `--color-categoryname`
+            // yang diatur oleh ChartStyle Shadcn
+            fill: `var(--color-${item.jenis.toLowerCase().replace(/ /g, '-')})`
+        }));
+    }, [data]);
+    
+    const id = "pie-interactive-modified"; // ID unik untuk ChartContainer dan ChartStyle
+    
+    // chartConfig harus sesuai dengan ChartConfig dari Shadcn UI
+    // dan mencerminkan kategori data yang sebenarnya (jurnal, prosiding, dll.)
+    const chartConfig: ChartConfig = React.useMemo(() => {
+        const config: ChartConfig = {
+            // Definisikan juga 'Total' jika digunakan di Label tengah
+            total: {
+                label: "Total Publikasi",
+                color: "hsl(var(--foreground))", // Warna default atau sesuaikan
+            }
+        };
+
+        // Definisikan warna spesifik untuk setiap kategori
+        // Ini adalah tempat untuk menentukan mapping warna Shadcn Chart
+        // ke kategori data Anda. Anda perlu mendefinisikan variabel CSS ini
+        // (misalnya, --chart-1, --chart-2, dst.) di file CSS global atau tema Anda.
+        const staticColors = [
+            "var(--chart-1)", // untuk Jurnal
+            "var(--chart-2)", // untuk Prosiding
+            "var(--chart-3)", // untuk Buku
+            "var(--chart-4)", // untuk Lainnya
+            "var(--chart-5)", // jika ada kategori ke-5
+            "var(--chart-6)", // jika ada kategori ke-6
+        ];
+
+        chartData.forEach((item, index) => {
+            const categoryKey = item.name.toLowerCase().replace(/ /g, '-');
+            config[categoryKey] = {
+                label: item.name,
+                color: staticColors[index % staticColors.length] || "hsl(var(--primary))",
+            };
+        });
+        
+        return config;
+    }, [chartData]);
+    
+    // State untuk kategori yang aktif, sama seperti di ChartPieInteractive Shadcn
+    const [activeCategory, setActiveCategory] = React.useState(chartData.length > 0 ? chartData[0].name : '');
+    
+    const activeIndex = React.useMemo(
+        () => chartData.findIndex((item) => item.name === activeCategory),
+        [activeCategory, chartData]
+    );
+
+    const categories = React.useMemo(() => chartData.map((item) => item.name), [chartData]);
+
+    // Active shape render function, persis seperti ChartPieInteractive Shadcn
+    const renderActiveShape = ({
+        outerRadius = 0,
+        ...props
+    }: PieSectorDataItem) => (
+        <g>
+            <Sector {...props} outerRadius={outerRadius + 10} />
+            <Sector
+                {...props}
+                outerRadius={outerRadius + 25}
+                innerRadius={outerRadius + 12}
+            />
+        </g>
+    );
+    
+    return (
+        <Card data-chart={id} className={`flex flex-col shadow-lg rounded-xl ${className}`}>
+            <ChartStyle id={id} config={chartConfig} /> {/* Menggunakan ChartStyle dari Shadcn */}
+            
+            <CardHeader className="flex flex-row items-start space-y-0 pb-0">
+                <div className="grid gap-1">
+                    <CardTitle className="text-lg font-semibold text-[#E62F2A]">{title}</CardTitle>
+                    <CardDescription>Januari - Desember 2024</CardDescription>
+                </div>
+                {/* Menggunakan Shadcn Select components */}
+                <Select value={activeCategory} onValueChange={setActiveCategory}>
+                    <SelectTrigger
+                        className="ml-auto h-7 w-[130px] rounded-lg pl-2.5"
+                        aria-label="Select a value"
+                    >
+                        <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent align="end" className="rounded-xl">
+                        {categories.map((key) => {
+                            const configItem = chartConfig[key.toLowerCase().replace(/ /g, '-') as keyof typeof chartConfig];
+
+                            if (!configItem) {
+                                return null;
+                            }
+
+                            return (
+                                <SelectItem
+                                    key={key}
+                                    value={key}
+                                    className="rounded-lg [&_span]:flex"
+                                >
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <span
+                                            className="flex h-3 w-3 shrink-0 rounded-xs"
+                                            style={{
+                                                backgroundColor: `var(--color-${key.toLowerCase().replace(/ /g, '-')})`,
+                                            }}
+                                        />
+                                        {configItem?.label}
+                                    </div>
+                                </SelectItem>
+                            );
+                        })}
+                    </SelectContent>
+                </Select>
+            </CardHeader>
+            
+            <CardContent className="flex flex-1 flex-col items-center justify-center p-6 pt-0 pb-6">
+                {/* Hapus ResponsiveContainer dari sini */}
+                <ChartContainer 
+                    id={id} 
+                    config={chartConfig} 
+                    className="mx-auto" 
+                    style={{ height: '300px', width: '300px' }} // Atur tinggi dan lebar tetap
+                >
+                    {chartData.length > 0 ? (
+                        <PieChart width={300} height={300}> {/* DIMENSI LANGSUNG KE PIECHART */}
+                                {/* Menggunakan ChartTooltip Shadcn */}
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel />}
+                                />
+                                <Pie
+                                    data={chartData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    strokeWidth={5}
+                                    activeShape={renderActiveShape}
+                                    // onMouseEnter={(_, index) => setActiveCategory(chartData[index].name)}
+                                    // onMouseLeave={() => setActiveCategory(chartData[0].name)}
+                                    isAnimationActive={true}
+                                >
+                                    {/* `Cell` tidak perlu didefinisikan secara eksplisit untuk warna jika `fill` sudah di data */}
+                                    {chartData.map((entry, index) => {
+                                        // Pastikan properti 'fill' ada di setiap item chartData
+                                        // Ini akan diambil dari `fill: var(--color-categoryname)` yang dibuat di atas
+                                        return <Cell key={`cell-${index}`} fill={entry.fill} />;
+                                    })}
+                                    <Label
+                                        content={({ viewBox }) => {
+                                            // console.log("viewBox for Label:", viewBox); // Bisa dihapus setelah debugging
+                                            
+                                            // Recharts akan menyediakan viewBox yang valid jika width/height ditetapkan langsung
+                                            // cx dan cy seharusnya ada.
+                                            const cx = viewBox?.cx ?? 150; // Fallback jika undefined (width/2)
+                                            const cy = viewBox?.cy ?? 150; // Fallback jika undefined (height/2)
+
+
+                                            const currentItem = activeIndex >= 0 ? chartData[activeIndex] : null; // Gunakan activeIndex
+
+                                            return (
+                                                <text
+                                                    x={cx}
+                                                    y={cy}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    <tspan
+                                                        x={cx}
+                                                        y={cy}
+                                                        className="fill-foreground text-3xl font-bold"
+                                                    >
+                                                        {currentItem ? currentItem.value.toLocaleString() : '0'}
+                                                    </tspan>
+                                                    <tspan  
+                                                        x={cx}
+                                                        y={(cy || 0) + 24}
+                                                        className="fill-muted-foreground"
+                                                    >
+                                                        {currentItem ? currentItem.name : 'N/A'} {/* PERBAIKAN DI SINI */}
+                                                    </tspan>
+                                                </text>
+                                            );
+                                        }}
+                                    />
+                                </Pie>
+                            </PieChart>
+                        
+                    ) : (
+                        <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
+                            <span>No data available</span>
+                        </div>
+                    )}
+                </ChartContainer>
+                
+                {/* Legend horizontal di bawah pie chart - Non-interactive */}
+                {chartData.length > 0 && (
+                    <div className="flex flex-wrap justify-center gap-4 mt-4 px-4">
+                        {chartData.map((entry, index) => {
+                            const configItem = chartConfig[entry.name.toLowerCase().replace(/ /g, '-') as keyof typeof chartConfig];
+                            
+                            return (
+                                <div
+                                    key={`legend-${index}`}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm"
+                                >
+                                    <div
+                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        style={{
+                                            backgroundColor: `var(--color-${entry.name.toLowerCase().replace(/ /g, '-')})`,
+                                        }}
+                                    />
+                                    <span className="font-medium text-gray-700">
+                                        {configItem?.label || entry.name}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                        ({entry.value.toLocaleString()})
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
