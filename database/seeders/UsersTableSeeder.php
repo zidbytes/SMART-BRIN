@@ -93,10 +93,30 @@ class UsersTableSeeder extends Seeder
         }
 
         User::firstOrCreate(
-            ['email' => 'test.user@BRIN.co.id'],
+            ['email' => 'monev@BRIN.co.id'],
             [
-                'name'           => 'Test User',
-                'password'       => Hash::make('password123'),
+                'name'           => 'Monev User',
+                'password'       => Hash::make('d'),
+                'research_group' => 'Testing Group',
+                'role'           => 'monev',
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'head@BRIN.co.id'],
+            [
+                'name'           => 'Head User',
+                'password'       => Hash::make('d'),
+                'research_group' => 'Testing Group',
+                'role'           => 'head',
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'researcher@BRIN.co.id'],
+            [
+                'name'           => 'Researcher User',
+                'password'       => Hash::make('d'),
                 'research_group' => 'Testing Group',
                 'role'           => 'researcher',
             ]

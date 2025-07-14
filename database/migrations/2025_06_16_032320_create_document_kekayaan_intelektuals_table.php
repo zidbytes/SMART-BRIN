@@ -15,9 +15,9 @@ return new class extends Migration
             $t->id();
             $t->foreignId('document_id')
             ->constrained('documents')->onDelete('cascade');
-            $t->string('judul_ki')->nullable();
-            $t->string('kelompok_riset')->nullable();
-            $t->string('status')->nullable(); 
+            $t->string('judul_ki');
+            $t->string('kelompok_riset');
+            $t->string('status'); 
             $t->string('inventors1')->nullable();
             $t->string('inventors2')->nullable();
             $t->string('inventors3')->nullable();
@@ -27,7 +27,7 @@ return new class extends Migration
             $t->string('inventors7')->nullable();
             $t->string('inventors8')->nullable();
             $t->string('nonprsdi_inventors')->nullable();   
-            $t->string('jenis')->nullable();
+            $t->string('jenis');
             $t->string('no_pendaftaran')->nullable();
             $t->date('tanggal_daftar')->nullable();
             $t->string('no_sertifikat')->nullable();

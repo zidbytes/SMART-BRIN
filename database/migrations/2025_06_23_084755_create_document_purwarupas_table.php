@@ -16,16 +16,16 @@ return new class extends Migration
             $table->foreignId('document_id')
                   ->constrained('documents')
                   ->onDelete('cascade');
-            $table->string('judul_purwarupa')->nullable();
-            $table->string('kelompok_riset')->nullable();
+            $table->string('judul_purwarupa');
+            $table->string('kelompok_riset');
             $table->string('inventor1')->nullable();
             $table->string('inventor2')->nullable();
             $table->string('inventor3')->nullable();
             $table->string('inventor4')->nullable();
             $table->string('inventor5')->nullable();
             $table->text('non_sivitas_prsdi')->nullable();
-            $table->string('jenis')->nullable();
-            $table->string('status')->nullable();
+            $table->string('jenis');
+            $table->string('status');
             $table->string('nama_mitra')->nullable();
             $table->string('upload_gdrive')->nullable();
             $table->string('link')->nullable();

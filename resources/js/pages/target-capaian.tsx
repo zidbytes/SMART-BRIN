@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import patternBg from '../assets/bg-pattern3.png';
+import { transparentScrollbarCSS } from '@/styles/scrollbar';
 
 interface Target {
     id: number;
@@ -44,9 +45,15 @@ const indikatorList = [
 ];
 
 export default function TargetCapaian({ targets, success, auth }: Props) {
-    const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+    // Get the most recent year from targets or use current year as fallback
+    const mostRecentYear = targets.length > 0 
+        ? Math.max(...targets.map(t => t.tahun)) 
+        : new Date().getFullYear();
+    
+    const [filterYear, setFilterYear] = useState(mostRecentYear);
     const [isEditPopupVisible, setEditPopupVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
     const [editForm, setEditForm] = useState(() =>
         Object.fromEntries(indikatorList.map(i => [i.key, '']))
     );
@@ -58,7 +65,6 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Form submitted with data:', { tahun: editTahun, ...editForm }); // Debug log
         
         if (isSubmitting) return; // Prevent double submission
         
@@ -77,17 +83,14 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
         
         if (targetToEdit) {
             // Update existing target
-            console.log('Updating target with ID:', targetToEdit.id); // Debug log
             router.put(`/target-tahunan/update/${targetToEdit.id}`, 
                 { tahun: editTahun, ...editForm },
                 {
                     onSuccess: () => {
-                        console.log('Update successful');
                         setIsSubmitting(false);
                         setEditPopupVisible(false);
                     },
-                    onError: (errors) => {
-                        console.error('Update failed:', errors);
+                    onError: () => {
                         setIsSubmitting(false);
                         alert('Gagal menyimpan data. Silakan coba lagi.');
                     }
@@ -95,17 +98,14 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
             );
         } else {
             // Create new target
-            console.log('Creating new target for year:', editTahun); // Debug log
             router.post(`/target-tahunan`, 
                 { tahun: editTahun, ...editForm },
                 {
                     onSuccess: () => {
-                        console.log('Create successful');
                         setIsSubmitting(false);
                         setEditPopupVisible(false);
                     },
-                    onError: (errors) => {
-                        console.error('Create failed:', errors);
+                    onError: () => {
                         setIsSubmitting(false);
                         alert('Gagal menyimpan data. Silakan coba lagi.');
                     }
@@ -117,8 +117,9 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
     return (
         <AppLayout>
             <Head title="Target Tahunan" />
+            <style>{transparentScrollbarCSS}</style>
             <div
-                className="flex h-full flex-1 flex-col gap-4 rounded-xl p-6 overflow-x-auto"
+                className="flex h-full flex-1 flex-col gap-4 rounded-xl p-6 overflow-x-auto transparent-scrollbar"
                 style={{
                     backgroundImage: `url(${patternBg})`,
                     // backgroundColor: '#f3f4f6',
@@ -134,9 +135,14 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                 value={filterYear}
                                 onChange={(e) => setFilterYear(Number(e.target.value))}
                             >
-                                {Array.from(new Set(targets.map(t => t.tahun))).sort((a, b) => b - a).map(year => (
-                                    <option key={year} value={year}>{year}</option>
-                                ))}
+                                {targets.length > 0 
+                                    ? Array.from(new Set(targets.map(t => t.tahun))).sort((a, b) => b - a).map(year => (
+                                        <option key={year} value={year}>{year}</option>
+                                      ))
+                                    : [new Date().getFullYear()].map(year => (
+                                        <option key={year} value={year}>{year}</option>
+                                      ))
+                                }
                             </select>
                         </div>
                     </div>
@@ -147,7 +153,7 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                     )}
 
                     {/* Tabel target tahunan vertikal */}
-                    <div className="overflow-x-visible">
+                    <div className="overflow-x-visible transparent-scrollbar">
                         <table className="w-full border text-sm border-collapse">
                             <thead className="bg-gray-100">
                                 <tr>
@@ -178,7 +184,8 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                     const satuanList = [
                                         'KI', 'Publikasi', 'Purwarupa', 'Kerjasama', 'Kerjasama', 'Rp', 'Orang', 'Orang', 'Pelatihan'
                                     ];
-                                    const targetTahun = targets.find(t => t.tahun === filterYear);
+                                    // Ensure both are treated as numbers for comparison
+                                    const targetTahun = targets.find(t => Number(t.tahun) === Number(filterYear));
 
                                     const keyList = [
                                         'kekayaan_intelektual',
@@ -249,8 +256,8 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
 
                     {/* Popup Form Ubah Target */}
                     {isEditPopupVisible && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                            <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+                        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
+                            <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto transparent-scrollbar">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-2xl font-bold text-[#E62F2A]">
                                         {targets.find(t => t.tahun === filterYear) ? 'Ubah Target Tahunan' : 'Tambah Target Tahunan'}

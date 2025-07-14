@@ -8,8 +8,8 @@ use App\Models\Document;
 class DocumentPolicy
 {
     /**
-     * View permission: researcher hanya bisa melihat dokumennya sendiri,
-     * head dan monev bisa melihat semua dokumen.
+     * Peneliti hanya bisa melihat dokumennya sendiri.
+     * Monev dan kepala bisa melihat semua dokumen.
      */
     public function view(User $user, Document $document): bool
     {
@@ -17,43 +17,52 @@ class DocumentPolicy
     }
 
     /**
-     * Update permission:
-     * - head & researcher: bisa update dokumen milik sendiri, TAPI tidak boleh update kolom monev_stamp dan bulan.
-     * - monev: hanya bisa update status, notes, dan monev_stamp.
+     * Monev bisa mengedit (terbatas), head bisa edit semua, 
+     * peneliti hanya bisa edit miliknya sendiri.
      */
     public function update(User $user, Document $document): bool
     {
-        if ($user->role === 'monev') {
-            return true;
-        }
-
-        if ($user->role === 'head') {
-            return true;
-        }
-
-        return $user->role === 'researcher' && $user->id === $document->user_id;
+        return match ($user->role) {
+            'monev', 'head' => true,
+            'researcher'    => $user->id === $document->user_id,
+            default         => false,
+        };
     }
 
     /**
-     * Delete permission:
-     * - hanya head dan researcher (atas dokumen miliknya sendiri) yang bisa hapus
-     * - monev tidak bisa hapus dokumen
+     * Hapus hanya bisa oleh peneliti (atas dokumennya) dan kepala.
+     * Monev tidak bisa hapus.
      */
     public function delete(User $user, Document $document): bool
     {
-        if ($user->role === 'head') {
-            return true;
-        }
-
-        return $user->role === 'researcher' && $user->id === $document->user_id;
+        return match ($user->role) {
+            'head'          => true,
+            'researcher'    => $user->id === $document->user_id,
+            default         => false,
+        };
     }
 
     /**
-     * Create permission:
-     * - hanya researcher dan head yang bisa buat dokumen
+     * Hanya peneliti dan kepala yang bisa buat dokumen.
      */
     public function create(User $user): bool
     {
         return in_array($user->role, ['researcher', 'head']);
+    }
+
+    /**
+     * Laporan hanya untuk role monev dan kepala.
+     */
+    public function viewReport(User $user): bool
+    {
+        return in_array($user->role, ['monev', 'head']);
+    }
+
+    /**
+     * Hanya kepala yang boleh kelola user.
+     */
+    public function manageUsers(User $user): bool
+    {
+        return $user->role === 'head';
     }
 }

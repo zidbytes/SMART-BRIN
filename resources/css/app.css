@@ -220,3 +220,19 @@
     @apply bg-background text-foreground;
     }
 }
+
+
+/* CSS Scrollbar styling */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+.scrollbar-hidden {
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;     /* Firefox */
+}

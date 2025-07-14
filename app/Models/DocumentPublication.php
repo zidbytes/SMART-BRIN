@@ -32,6 +32,7 @@ class DocumentPublication extends Model
         'file_drive_link',
         'url',
         'doi',
+        'bulan', // Menambahkan kolom bulan
     ];
 
     protected $casts = [

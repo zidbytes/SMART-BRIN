@@ -17,10 +17,10 @@
                 ->constrained('documents')->onDelete('cascade');
                 $t->string('nama_sdm_prsdi')->nullable();
                 $t->string('non_sdm_prsdi')->nullable();
-                $t->string('kelompok_riset')->nullable();
-                $t->string('status')->nullable();
-                $t->string('jenis')->nullable();
-                $t->text('keterangan')->nullable();
+                $t->string('kelompok_riset');
+                $t->string('status');
+                $t->string('jenis');
+                $t->text('keterangan');
                 $t->string('upload_dakung')->nullable();
                 $t->string('direct_link')->nullable();
                 $t->timestamps();

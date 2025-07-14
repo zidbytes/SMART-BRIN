@@ -1,46 +1,154 @@
 // "use client" // Tambahkan ini jika file ini berada di lingkungan Next.js App Router
 
 import React, { useState } from 'react';
-import { ChevronDown, TrendingUp } from 'lucide-react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Label, Pie, PieChart, Sector, Cell } from 'recharts';
-import { PieSectorDataItem } from "recharts/types/polar/Pie"
+
+// Import custom components
+import KpiCard from '@/components/KpiCard';
+import PublicationLineChart from '@/components/charts/PublicationLineChart';
+import BarChart from '@/components/charts/BarChart';
+import ChartRadarStatus from '@/components/charts/ChartRadarStatus';
+import ModifiedPieChartPlaceholder from '@/components/charts/ModifiedPieChartPlaceholder';
 
 // Import komponen Shadcn UI yang sebenarnya
 // Pastikan path ini sesuai dengan struktur proyek Anda
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-    CardFooter,
-} from "@/components/ui/card"
-import {
-    ChartConfig,
-    ChartContainer,
-    ChartStyle,
-    ChartTooltip,
-    ChartTooltipContent,
-} from "@/components/ui/chart" // <-- Path ini memerlukan shadcn-ui add chart
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/card";
 
 // Menggunakan import aktual seperti yang diminta
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import patternBg from '../assets/bg-pattern3.png'; // Import background pattern
+
+// Helper function to convert research group names to abbreviations
+function abbreviateResearchGroup(fullName: string): string {
+    const mapping: { [key: string]: string } = {
+        'Natural Language Processing': 'NLP',
+        'Information Retrieval': 'IR',
+        'Knowledge and Data Engineering': 'KDE',
+        'Digital Government': 'DG',
+        'Human Computer Interaction': 'IMKV',
+        'Human Computer Interaction and Visualisation': 'IMKV',
+        // Add any additional mappings here
+    };
+    
+    return mapping[fullName] || fullName;
+}
+
+// Helper function to convert university names to abbreviations
+function abbreviateUniversityName(fullName: string): string {
+    const mapping: { [key: string]: string } = {
+        'Universitas Indonesia': 'UI',
+        'Institut Teknologi Bandung': 'ITB',
+        'Universitas Gadjah Mada': 'UGM',
+        'National University of Singapore': 'NUS',
+        'Technische Universiteit Delft': 'TU Delft',
+        'Seoul National University of Science and Technology': 'SeoulTech',
+        // Add any additional university mappings here
+    };
+    
+    return mapping[fullName] || fullName;
+}
+
+// Helper function to transform research group data to use abbreviations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformResearchGroupData(data: any[]): any[] {
+    return data.map(item => {
+        const abbreviated = abbreviateResearchGroup(String(item.name));
+        return {
+            ...item,
+            jenis: abbreviated, // Add jenis for ModifiedPieChartPlaceholder compatibility
+            displayName: abbreviated
+        };
+    });
+}
+
+// Helper function to transform university data to use abbreviations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformUniversityData(data: any[]): any[] {
+    return data.map(item => {
+        const abbreviated = abbreviateUniversityName(String(item.name));
+        return {
+            ...item,
+            displayName: abbreviated
+        };
+    });
+}
+
+// Helper function to provide sample data if real data is empty
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function provideDataFallback(data: any[], type: string): any[] {
+    if (data && data.length > 0) {
+        return data;
+    }
+    
+    // Return appropriate default data based on type
+    switch (type) {
+        case 'pksJenis':
+            return [
+                { jenis: 'Dalam Negeri', count: 27 },
+                { jenis: 'Luar Negeri', count: 14 },
+            ];
+        case 'researchGroup':
+            return [
+                { name: 'Natural Language Processing', count: 3 },
+                { name: 'Information Retrieval', count: 2 },
+                { name: 'Knowledge and Data Engineering', count: 4 },
+                { name: 'Human Computer Interaction', count: 5 },
+                { name: 'Digital Government', count: 2 },
+            ];
+        case 'status':
+            return [
+                { jenis: 'Terdaftar', count: 5 },
+                { jenis: 'Granted', count: 3 },
+                { jenis: 'Dalam Proses', count: 8 },
+            ];
+        case 'university':
+            return [
+                { name: 'UI', count: 3 },
+                { name: 'ITB', count: 2 },
+                { name: 'UGM', count: 4 },
+                { name: 'NUS', count: 1 },
+                { name: 'TU Delft', count: 2 },
+            ];
+        case 'degree':
+            return [
+                { jenis: 'S3', count: 4 },
+                { jenis: 'S2', count: 7 },
+                { jenis: 'Post-Doc', count: 2 },
+            ];
+        case 'year':
+            return [
+                { name: 2022, count: 250000000 },
+                { name: 2023, count: 350000000 },
+                { name: 2024, count: 450000000 },
+                { name: 2025, count: 550000000 },
+            ];
+        case 'participation':
+            return [
+                { jenis: 'SDM PRSDI', count: 12 },
+                { jenis: 'Non-SDM PRSDI', count: 5 },
+            ];
+        case 'pdvrType':
+            return [
+                { name: 'Pelatihan', count: 8 },
+                { name: 'Seminar', count: 5 },
+                { name: 'Workshop', count: 3 },
+                { name: 'Conference', count: 4 },
+            ];
+        default:
+            return [
+                { name: 'Sample 1', count: 5 },
+                { name: 'Sample 2', count: 8 },
+                { name: 'Sample 3', count: 3 },
+                { name: 'Sample 4', count: 7 },
+            ];
+    }
+}
+
+
 
 // Shadcn UI Tabs components mockup (mempertahankan ini karena Anda membuatnya sendiri)
 interface TabsProps {
@@ -119,284 +227,6 @@ const TabsContent = ({ value, activeTab, className, children }: TabsContentProps
     </div>
 );
 
-// Real Chart Components using database data
-interface ChartPlaceholderProps {
-    title: string;
-    className?: string;
-    dropdown?: boolean;
-    dropdownCaption?: string;
-}
-
-// Line Chart Component for Publications Trend using Recharts
-interface LineChartProps {
-    title: string;
-    data: { name: string; total: number }[];
-    className?: string;
-    dropdown?: boolean;
-}
-
-const PublicationLineChart = ({ title, data, className, dropdown = false }: LineChartProps) => {
-    const [selectedYear, setSelectedYear] = useState<string>('2024');
-    
-    // Transform data for Recharts
-    const chartData = data.map(item => ({
-        month: item.name,
-        publications: item.total,
-    }));
-    
-    // Calculate trend percentage
-    const currentTotal = data.reduce((sum, item) => sum + item.total, 0);
-    const trendPercentage = data.length > 1 ? 
-        ((data[data.length - 1].total - data[0].total) / data[0].total * 100).toFixed(1) : 0;
-    
-    return (
-        <Card className={className}>
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle className="text-[#E62F2A]">{title}</CardTitle>
-                        <CardDescription>January - December 2024</CardDescription>
-                    </div>
-                    {dropdown && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="border rounded px-3 py-2 text-sm bg-white flex items-center gap-2 hover:bg-gray-50">
-                                    {selectedYear} <ChevronDown size={16} />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent >
-                                <DropdownMenuItem onClick={() => setSelectedYear('2024')}>2024</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSelectedYear('2023')}>2023</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSelectedYear('2022')}>2022</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="w-full h-64">
-                    {data.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                                data={chartData}
-                                margin={{
-                                    top: 20,
-                                    right: 30,
-                                    left: 20,
-                                    bottom: 20,
-                                }}
-                            >
-                                <CartesianGrid strokeDashArray="3 3" stroke="#f0f0f0" />
-                                <XAxis 
-                                    dataKey="month" 
-                                    stroke="#6b7280"
-                                    fontSize={11}
-                                    tickFormatter={(value) => value.substring(0, 3)}
-                                />
-                                <YAxis 
-                                    stroke="#6b7280"
-                                    fontSize={11}
-                                />
-                                <Tooltip
-                                    content={({ active, payload, label }) => {
-                                        if (active && payload && payload.length) {
-                                            return (
-                                                <div className="bg-white p-3 border rounded-lg shadow-lg">
-                                                    <p className="font-medium text-gray-700">{label}</p>
-                                                    <p className="text-[#E62F2A]">
-                                                        Publikasi: {payload[0].value}
-                                                    </p>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="publications"
-                                    stroke="#E62F2A"
-                                    strokeWidth={3}
-                                    dot={{ 
-                                        fill: "#E62F2A", 
-                                        strokeWidth: 2, 
-                                        r: 4 
-                                    }}
-                                    activeDot={{ 
-                                        r: 6, 
-                                        fill: "#E62F2A",
-                                        stroke: "#fff",
-                                        strokeWidth: 2
-                                    }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
-                            <span>No data available</span>
-                        </div>
-                    )}
-                </div>
-            </CardContent>
-            <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 items-center font-medium leading-none">
-                    {Number(trendPercentage) > 0 ? (
-                        <>
-                            Trending up by {trendPercentage}% this year 
-                            <TrendingUp className="h-4 w-4 text-green-600" />
-                        </>
-                    ) : Number(trendPercentage) < 0 ? (
-                        <>
-                            Trending down by {Math.abs(Number(trendPercentage))}% this year
-                            <TrendingUp className="h-4 w-4 text-red-600 rotate-180" />
-                        </>
-                    ) : (
-                        <>
-                            No change this year
-                            <div className="h-4 w-4" />
-                        </>
-                    )}
-                </div>
-                <div className="text-gray-500 leading-none">
-                    Showing total publications for the last 12 months ({currentTotal} total)
-                </div>
-            </CardFooter>
-        </Card>
-    );
-};
-
-
-// Bar Chart Component for Scopus vs Non-Scopus
-interface BarChartProps {
-    title: string;
-    data: { name: string; count: number }[];
-    className?: string;
-}
-
-const BarChart = ({ title, data, className }: BarChartProps) => {
-    const maxValue = Math.max(...data.map(d => d.count), 1);
-    const chartHeight = 200;
-    const chartWidth = 500;
-    const barWidth = 80;
-    const barSpacing = 120;
-    
-    return (
-        <Card className={`shadow-lg rounded-xl ${className}`}>
-            <CardContent className="p-4">
-                <div className="font-bold mb-4 text-[#E62F2A]">{title}</div>
-                <div className="w-full h-64 overflow-hidden">
-                    {data.length > 0 ? (
-                        <div className="w-full h-full">
-                            <svg 
-                                width="100%" 
-                                height="100%" 
-                                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                                className="w-full h-full"
-                                preserveAspectRatio="xMidYMid meet"
-                            >
-                                {/* Grid lines */}
-                                {[0, 1, 2, 3, 4].map((i) => {
-                                    const y = 30 + (i * (chartHeight - 60) / 4);
-                                    return (
-                                        <line
-                                            key={i}
-                                            x1="80"
-                                            y1={y}
-                                            x2={chartWidth - 40}
-                                            y2={y}
-                                            stroke="#e5e7eb"
-                                            strokeWidth="1"
-                                        />
-                                    );
-                                })}
-                                
-                                {/* Bars */}
-                                {data.map((item, index) => {
-                                    const barHeight = (item.count / maxValue) * (chartHeight - 60);
-                                    const x = 100 + (index * barSpacing);
-                                    const y = chartHeight - 30 - barHeight;
-                                    const color = index === 0 ? '#E62F2A' : '#94A3B8';
-                                    
-                                    return (
-                                        <g key={index}>
-                                            {/* Bar */}
-                                            <rect
-                                                x={x}
-                                                y={y}
-                                                width={barWidth}
-                                                height={barHeight}
-                                                fill={color}
-                                                rx="4"
-                                            />
-                                            
-                                            {/* Value label on top of bar */}
-                                            <text
-                                                x={x + barWidth / 2}
-                                                y={y - 8}
-                                                textAnchor="middle"
-                                                fontSize="12"
-                                                fill="#6b7280"
-                                                fontWeight="500"
-                                            >
-                                                {item.count}
-                                            </text>
-                                            
-                                            {/* Category label */}
-                                            <text
-                                                x={x + barWidth / 2}
-                                                y={chartHeight - 10}
-                                                textAnchor="middle"
-                                                fontSize="12"
-                                                fill="#6b7280"
-                                            >
-                                                {item.name}
-                                            </text>
-                                        </g>
-                                    );
-                                })}
-                                
-                                {/* Y-axis labels */}
-                                {[0, 1, 2, 3, 4].map((i) => {
-                                    const y = 30 + (i * (chartHeight - 60) / 4);
-                                    const value = Math.round(maxValue - (i * maxValue / 4));
-                                    return (
-                                        <text
-                                            key={i}
-                                            x="70"
-                                            y={y + 4}
-                                            textAnchor="end"
-                                            fontSize="11"
-                                            fill="#6b7280"
-                                        >
-                                            {value}
-                                        </text>
-                                    );
-                                })}
-                            </svg>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
-                            <span>No data available</span>
-                        </div>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
-    );
-};
-
-const BarChartPlaceholder = ({ title, className }: ChartPlaceholderProps) => (
-    <Card className={`shadow-lg rounded-xl ${className}`}>
-        <CardContent className="p-4">
-            <div className="font-bold mb-4 text-[#E62F2A]">{title}</div>
-            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-md border border-dashed text-gray-400">
-                <span>[Placeholder Bar Chart]</span>
-            </div>
-        </CardContent>
-    </Card>
-);
-
-
 // Mock DataTable component
 interface DataTableColumn {
     header: string;
@@ -412,23 +242,12 @@ const DataTable = ({ data = [], columns = [] }: DataTableProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Default mock data if none provided
-    const defaultMockData = [
-        { id: 1, periset: 'Jane Cooper', judul: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.', catatan: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.', tahun: '2023', jenis: 'Jurnal', status: 'Scopus' },
-        { id: 2, periset: 'Floyd Miles', judul: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.', catatan: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.', tahun: '2024', jenis: 'Prosiding', status: 'Non-Scopus' },
-        { id: 3, periset: 'Ronald Richards', judul: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.', catatan: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.', tahun: '2023', jenis: 'Buku', status: 'Non-Scopus' },
-        { id: 4, periset: 'Jane Smith', judul: 'Research on Advanced Data Science Techniques', catatan: 'Comprehensive analysis of modern methodologies.', tahun: '2024', jenis: 'Jurnal', status: 'Scopus' },
-        { id: 5, periset: 'John Doe', judul: 'Machine Learning Applications in Healthcare', catatan: 'Innovative approaches to medical diagnosis.', tahun: '2024', jenis: 'Prosiding', status: 'Scopus' },
-        { id: 6, periset: 'Alice Johnson', judul: 'Artificial Intelligence in Education', catatan: 'Transforming learning experiences with AI.', tahun: '2023', jenis: 'Buku', status: 'Non-Scopus' },
-        { id: 7, periset: 'Bob Wilson', judul: 'Blockchain Technology Overview', catatan: 'Understanding distributed ledger systems.', tahun: '2024', jenis: 'Jurnal', status: 'Scopus' },
-    ];
+    // No default mock data anymore
+    const defaultMockData: Array<Record<string, unknown>> = [];
 
-    // Default mock columns if none provided
+    // Default columns if none provided
     const defaultMockColumns: DataTableColumn[] = [
-        { header: 'No.', accessor: 'id' },
-        { header: 'Periset', accessor: 'periset' },
-        { header: 'Judul', accessor: 'judul' },
-        { header: 'Catatan', accessor: 'catatan' },
+        { header: 'ID', accessor: 'id' },
     ];
 
     const actualData = data.length > 0 ? data : defaultMockData;
@@ -491,57 +310,64 @@ const DataTable = ({ data = [], columns = [] }: DataTableProps) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {currentData.map((row, rowIndex) => (
-                            <tr key={rowIndex} className={`text-neutral-700 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-100`}>
-                                {actualColumns.map((col, colIndex) => (
-                                    <td key={colIndex} className="px-4 py-2">
-                                        {String((row as Record<string, unknown>)[col.accessor] || '')}
-                                    </td>
-                                ))}
+                        {actualData.length > 0 ? (
+                            currentData.map((row, rowIndex) => (
+                                <tr key={rowIndex} className={`text-neutral-700 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-100`}>
+                                    {actualColumns.map((col, colIndex) => (
+                                        <td key={colIndex} className="px-4 py-2">
+                                            {String((row as Record<string, unknown>)[col.accessor] || '')}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={actualColumns.length} className="px-4 py-6 text-center text-gray-500">
+                                    Tidak ada data yang tersedia
+                                </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
             
-            {/* Pagination Controls */}
-            <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
-                <span>
-                    Showing data {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
-                </span>
-                <div className="flex gap-1">
-                    <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className={`px-3 py-1 rounded text-sm ${
-                            currentPage === 1
-                                ? 'text-gray-300 cursor-not-allowed'
-                                : 'text-gray-500 hover:bg-gray-100'
-                        }`}
-                    >
-                        ‹
-                    </button>
-                    
-                    {renderPageNumbers()}
-                    
-                    <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className={`px-3 py-1 rounded text-sm ${
-                            currentPage === totalPages
-                                ? 'text-gray-300 cursor-not-allowed'
-                                : 'text-gray-500 hover:bg-gray-100'
-                        }`}
-                    >
-                        ›
-                    </button>
+            {/* Pagination Controls - Only show if we have data */}
+            {totalItems > 0 && (
+                <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
+                    <span>
+                        Showing data {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </span>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded text-sm ${
+                                currentPage === 1
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'bg-[#E62F2A] text-white hover:bg-[#c62828]'
+                            }`}
+                        >
+                            &lt; Prev
+                        </button>
+                        {renderPageNumbers()}
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded text-sm ${
+                                currentPage === totalPages
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'bg-[#E62F2A] text-white hover:bg-[#c62828]'
+                            }`}
+                        >
+                            Next &gt;
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
-};
+}
 
-// Function to get the current day and formatted date
 function getFormattedDate() {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const today = new Date();
@@ -576,6 +402,20 @@ interface DashboardProps {
         publicationsTrend: { name: string; total: number }[];
         publicationTypes: { jenis: string; count: number }[];
         scopusData: { name: string; count: number }[];
+        statusData: { category: string; count: number }[];
+        
+        // New chart data
+        kiByResearchGroup: { name: string; count: number }[];
+        kiByStatus: { jenis: string; count: number }[];
+        danaEksternalByYear: { name: string|number; count: number }[];
+        danaByResearchGroup: { name: string; count: number }[];
+        pksJenisData: { jenis: string; count: number }[];  // Data jenis kerjasama (dalam/luar negeri)
+        sdmByDegree: { jenis: string; count: number }[];
+        sdmByUniversity: { name: string; count: number }[];
+        purwarupaByResearchGroup: { name: string; count: number }[];
+        purwarupaByStatus: { jenis: string; count: number }[];
+        pdvrByType: { name: string; count: number }[];
+        pdvrParticipation: { jenis: string; count: number }[];
     };
     tables: {
         publicationsWithNotes: {
@@ -595,6 +435,19 @@ interface DashboardProps {
             jenis: string;
             status: string;
         }[];
+        directPublicationData: {
+            id: number;
+            periset: string;
+            judul_publikasi: string;
+            kelompok_riset: string;
+            jenis: string;
+            status: string;
+            nama_jurnal: string;
+            scopus_indexed: string;
+            reputasi: string;
+            doi: string;
+            tahun: string;
+        }[];
     };
 }
 
@@ -603,9 +456,14 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
         { title: 'Dashboard', href: '/dashboard' },
     ];
 
-    // Debug: Log target data
-    console.log('Target data received:', target);
-    console.log('Target publikasi_ilmiah_global:', target?.publikasi_ilmiah_global);
+    // Debug: Log data for debugging
+    React.useEffect(() => {
+        console.log('Target data received:', target);
+        console.log('Target publikasi_ilmiah_global:', target?.publikasi_ilmiah_global);
+        console.log('Tables data:', tables);
+        console.log('PublicationsWithNotes data:', tables.publicationsWithNotes);
+        console.log('DirectPublicationData data:', tables.directPublicationData);
+    }, [target, tables]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -624,61 +482,76 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                 </div>
 
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {/* Total Publikasi */}
-                    <div className="rounded-xl border bg-white shadow-lg p-5 flex flex-col gap-3">
-                        <div className="font-bold text-lg text-[#E62F2A]">Total Publikasi</div>
-                        <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold text-neutral-700">{kpi.totalPublications.toLocaleString()}</span>
-                            {target && target.publikasi_ilmiah_global > 0 && (
-                                <span className={`text-sm font-medium ${kpi.totalPublications >= target.publikasi_ilmiah_global ? 'text-green-600' : 'text-red-600'}`}>
-                                    {kpi.totalPublications >= target.publikasi_ilmiah_global ? '+' : ''}{((kpi.totalPublications / target.publikasi_ilmiah_global) * 100 - 100).toFixed(1)}%
-                                </span>
-                            )}
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                            {target && target.publikasi_ilmiah_global > 0 ? (
-                                <>Capaian: {kpi.totalPublications} / {target.publikasi_ilmiah_global} publikasi</>
-                            ) : (
-                                <>Capaian: {kpi.totalPublications} publikasi (target belum ditetapkan)</>
-                            )}
-                        </div>
-                        <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
-                            <div className="bg-[#E62F2A] h-1.5 rounded-full transition-all"
-                                style={{ 
-                                    width: target && target.publikasi_ilmiah_global > 0 
-                                        ? `${Math.min(100, (kpi.totalPublications / target.publikasi_ilmiah_global) * 100)}%` 
-                                        : '0%' 
-                                }}></div>
-                        </div>
-                    </div>
+                    <KpiCard 
+                        title="Total Publikasi"
+                        value={kpi.totalPublications}
+                        trend={target && target.publikasi_ilmiah_global > 0 ? {
+                            value: ((kpi.totalPublications / target.publikasi_ilmiah_global) * 100 - 100),
+                            isPositive: kpi.totalPublications >= target.publikasi_ilmiah_global
+                        } : undefined}
+                        description={target && target.publikasi_ilmiah_global > 0 
+                            ? `Capaian: ${kpi.totalPublications} / ${target.publikasi_ilmiah_global} publikasi`
+                            : `Capaian: ${kpi.totalPublications} publikasi (target belum ditetapkan)`}
+                        progress={{
+                            current: kpi.totalPublications,
+                            target: target?.publikasi_ilmiah_global,
+                            customWidth: target && target.publikasi_ilmiah_global > 0 
+                                ? `${Math.min(100, (kpi.totalPublications / target.publikasi_ilmiah_global) * 100)}%` 
+                                : '0%'
+                        }}
+                    />
+                    
                     {/* Untuk Terindex Scopus */}
-                    <div className="rounded-xl border bg-white shadow-lg p-5 flex flex-col gap-3">
-                        <div className="font-bold text-lg text-[#E62F2A]">Untuk Terindex Scopus</div>
-                        <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold text-neutral-700">
-                                {((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(2)}%
-                            </span>
-                            <span className="text-green-600 text-sm font-medium">+2.89%</span>
-                        </div>
-                        <div className="text-gray-500 text-xs">vs. previous month</div>
-                        <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
-                            <div className="bg-[#E62F2A] h-1.5 rounded-full"
-                                style={{ width: `${((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(0)}%` }}></div>
-                        </div>
-                    </div>
+                    <KpiCard 
+                        title="Untuk Terindex Scopus"
+                        value={`${((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(2)}%`}
+                        trend={{
+                            value: 2.89,
+                            isPositive: true
+                        }}
+                        description="vs. previous month"
+                        progress={{
+                            current: kpi.scopusIndexedCount,
+                            customWidth: `${((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(0)}%`
+                        }}
+                    />
+
+                    {/* Total KI */}
+                    <KpiCard 
+                        title="Total Kekayaan Intelektual"
+                        value={charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0}
+                        trend={target && target.kekayaan_intelektual > 0 ? {
+                            value: (((charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0) / target.kekayaan_intelektual) * 100 - 100),
+                            isPositive: (charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0) >= target.kekayaan_intelektual
+                        } : undefined}
+                        description={target && target.kekayaan_intelektual > 0 
+                            ? `Capaian: ${charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0} / ${target.kekayaan_intelektual} KI`
+                            : `Capaian: ${charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0} KI (target belum ditetapkan)`}
+                        progress={{
+                            current: charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0,
+                            target: target?.kekayaan_intelektual,
+                            customWidth: target && target.kekayaan_intelektual > 0 
+                                ? `${Math.min(100, ((charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0) / target.kekayaan_intelektual) * 100)}%` 
+                                : '0%'
+                        }}
+                    />
+
                     {/* Jumlah Periset Aktif */}
-                    <div className="rounded-xl border bg-white shadow-lg p-5 flex flex-col gap-3">
-                        <div className="font-bold text-lg text-[#E62F2A]">Jumlah Periset Aktif</div>
-                        <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold text-neutral-700">{kpi.activeResearchers.toLocaleString()}</span>
-                            <span className="text-green-600 text-sm font-medium">+2.89%</span>
-                        </div>
-                        <div className="text-gray-500 text-xs">vs. previous month</div>
-                        <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
-                            <div className="bg-[#E62F2A] h-1.5 rounded-full" style={{ width: '78%' }}></div>
-                        </div>
-                    </div>
+                    <KpiCard 
+                        title="Jumlah Periset Aktif"
+                        value={kpi.activeResearchers}
+                        trend={{
+                            value: 2.89,
+                            isPositive: true
+                        }}
+                        description="vs. previous month"
+                        progress={{
+                            current: 78,
+                            customWidth: '78%'
+                        }}
+                    />
                 </div>
 
                 {/* Chart Tabs - Using Shadcn Tabs */}
@@ -696,7 +569,7 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                     <TabsContent value="publikasi" activeTab={""} className="space-y-4">
                         <PublicationLineChart 
                             title="Perkembangan Publikasi per Bulan" 
-                            data={charts.publicationsTrend}
+                            data={charts.publicationsTrend || []}
                             className="w-full min-h-[400px]" 
                             dropdown 
                         />
@@ -705,61 +578,112 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                             <ModifiedPieChartPlaceholder
                                 title="Jenis Publikasi"
                                 className="w-full min-h-[400px]"
-                                data={charts.publicationTypes}
+                                data={charts.publicationTypes || []}
                             />
                             <BarChart 
                                 title="Scopus vs Non-Scopus" 
-                                data={charts.scopusData}
+                                data={charts.scopusData || []}
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                layout="horizontal" 
+                            />
+                            <ChartRadarStatus 
+                                data={charts.statusData || []} 
                                 className="w-full min-h-[400px]" 
-                            />
-                            <ModifiedPieChartPlaceholder
-                                title="Status Publikasi"
-                                className="w-full min-h-[400px]"
-                                data={[
-                                    { jenis: "Published", count: 245 },
-                                    { jenis: "In Review", count: 89 },
-                                    { jenis: "Draft", count: 67 },
-                                    { jenis: "Rejected", count: 23 }
-                                ]}
-                            />
+                            /> {/* Mengganti ModifiedPieChartPlaceholder dengan ChartRadarStatus */}
                         </div>
                     </TabsContent>
 
                     {/* Tab Content: KI */}
                     <TabsContent value="ki" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <BarChartPlaceholder title="Jumlah KI per Kelompok Riset" className="w-full min-h-[400px]" />
+                            <BarChart 
+                                title="Jumlah KI per Kelompok Riset (Total: 37)" 
+                                data={transformResearchGroupData(provideDataFallback(charts.kiByResearchGroup || [], 'researchGroup'))}
+                                className="w-full min-h-[500px] overflow-x-auto" 
+                            />
                             {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
-                            <ModifiedPieChartPlaceholder title="Status KI" className="w-full min-h-[400px]" />
+                            <ModifiedPieChartPlaceholder 
+                                title="Status KI" 
+                                className="w-full min-h-[400px]" 
+                                data={provideDataFallback(charts.kiByStatus || [], 'status')}
+                            />
                         </div>
                     </TabsContent>
 
                     {/* Tab Content: Dana Eksternal */}
                     <TabsContent value="dana" activeTab={""} className="space-y-4">
-                        <BarChartPlaceholder title="Nilai Dana Eksternal per Tahun" className="w-full min-h-[400px] mb-4" />
-                        <BarChartPlaceholder title="Dana Berdasarkan Kelompok Riset" className="w-full min-h-[400px]" />
+                        {/*                        <BarChart 
+                            title="Nilai Dana Eksternal per Tahun" 
+                            data={provideDataFallback(charts.danaEksternalByYear || [], 'year')}
+                            className="w-full min-h-[400px] mb-4 overflow-x-auto" 
+                            tickValues={[500000000, 1000000000, 1500000000, 2000000000, 2500000000, 3000000000]}
+                        />*/}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <BarChart 
+                                title="Dana Berdasarkan Kelompok Riset" 
+                                data={transformResearchGroupData(provideDataFallback(charts.danaByResearchGroup || [], 'researchGroup'))}
+                                className="w-full min-h-[400px] overflow-x-auto" 
+                                layout="horizontal"
+                                tickValues={[500000000, 1000000000, 1500000000, 2000000000, 2500000000, 3000000000]}
+                            />
+                            <ModifiedPieChartPlaceholder 
+                                title="Jenis Kerjasama" 
+                                className="w-full min-h-[400px]" 
+                                data={provideDataFallback(charts.pksJenisData || [], 'pksJenis')}
+                            />
+                        </div>
                     </TabsContent>
 
                     {/* Tab Content: SDM Studi */}
                     <TabsContent value="sdm" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
-                            <ModifiedPieChartPlaceholder title="Jenjang Studi SDM" className="w-full min-h-[400px]" />
-                            <BarChartPlaceholder title="Universitas Tujuan" className="w-full min-h-[400px]" />
+                            <ModifiedPieChartPlaceholder 
+                                title="Jenjang Studi SDM" 
+                                className="w-full min-h-[400px]" 
+                                data={provideDataFallback(charts.sdmByDegree || [], 'degree')}
+                            />
+                            <BarChart 
+                                title="Universitas Tujuan" 
+                                data={transformUniversityData(provideDataFallback(charts.sdmByUniversity || [], 'university'))}
+                                className="w-full min-h-[400px] overflow-x-auto" 
+                            />
                         </div>
                     </TabsContent>
 
                     {/* Tab Content: Purwarupa */}
                     <TabsContent value="purwarupa" activeTab={""} className="space-y-4">
-                        <BarChartPlaceholder title="Jumlah Purwarupa per Kelompok Riset" className="w-full min-h-[400px]" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <BarChart 
+                                title="Jumlah Purwarupa per Kelompok Riset" 
+                                data={transformResearchGroupData(provideDataFallback(charts.purwarupaByResearchGroup || [], 'researchGroup'))}
+                                className="w-full min-h-[400px] overflow-x-auto" 
+                            />
+                            <ModifiedPieChartPlaceholder 
+                                title="Status Purwarupa" 
+                                className="w-full min-h-[400px]" 
+                                data={provideDataFallback(charts.purwarupaByStatus || [], 'status')}
+                            />
+                        </div>
                     </TabsContent>
 
                     {/* Tab Content: PDVR */}
                     <TabsContent value="pdvr" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <BarChartPlaceholder title="Jumlah PDVR per Jenis" className="w-full min-h-[400px]" />
+                            <BarChart 
+                                title="Jumlah PDVR per Jenis" 
+                                data={provideDataFallback(charts.pdvrByType || [], 'pdvrType').map(item => ({
+                                    ...item,
+                                    displayName: item.name // Use display name for consistency
+                                }))}
+                                className="w-full min-h-[400px] overflow-x-auto" 
+                            />
                             {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
-                            <ModifiedPieChartPlaceholder title="Keterlibatan SDM vs Non-SDM" className="w-full min-h-[400px]" />
+                            <ModifiedPieChartPlaceholder 
+                                title="Keterlibatan SDM vs Non-SDM" 
+                                className="w-full min-h-[400px]" 
+                                data={provideDataFallback(charts.pdvrParticipation || [], 'participation')}
+                            />
                         </div>
                     </TabsContent>
                 </Tabs>
@@ -767,34 +691,40 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                 {/* DataTable for Publikasi Detail - Using Shadcn Card and custom DataTable */}
                 <Card className="shadow-lg rounded-xl">
                     <CardContent className="p-4">
-                        <div className="font-bold mb-2 text-[#E62F2A]">Daftar Publikasi Dengan Catatan</div>
-                        <DataTable data={tables.publicationsWithNotes} columns={[
-                            { header: 'No.', accessor: 'id' },
-                            { header: 'Periset', accessor: 'periset' },
-                            { header: 'Judul', accessor: 'judul' },
-                            { header: 'Catatan', accessor: 'catatan' },
-                            { header: 'Tahun', accessor: 'tahun' },
-                            { header: 'Jenis', accessor: 'jenis', },
-                            { header: 'Status', accessor: 'status' },
-                        ]} />
-                    </CardContent>
-                </Card>
-
-                {/* Detail Publikasi Table - This uses the DataTable component you've defined,
-                    assuming it can render the complex table structure.
-                */}
-                <Card className="shadow-lg rounded-xl mb-6">
-                    <CardContent className="p-4">
-                        <div className="font-bold mb-2 text-[#E62F2A]">Detail Publikasi</div>
-                        <DataTable
-                            data={tables.detailPublications}
+                        <div className="font-bold mb-2 text-[#E62F2A]">Publikasi dengan Catatan Khusus</div>
+                        {/* Adding console log in useEffect for debugging */}
+                        <DataTable 
+                            data={tables.publicationsWithNotes || []} 
                             columns={[
                                 { header: 'No.', accessor: 'id' },
                                 { header: 'Periset', accessor: 'periset' },
-                                { header: 'Judul Publikasi', accessor: 'judul_publikasi', },
+                                { header: 'Judul Publikasi', accessor: 'judul' },
+                                { header: 'Catatan', accessor: 'catatan' },
                                 { header: 'Tahun', accessor: 'tahun' },
-                                { header: 'Jenis Publikasi', accessor: 'jenis' },
+                                { header: 'Jenis', accessor: 'jenis', },
                                 { header: 'Status', accessor: 'status' },
+                            ]} 
+                        />
+                    </CardContent>
+                </Card>
+                
+                {/* Data Langsung dari document_publications */}
+                <Card className="shadow-lg rounded-xl mb-6">
+                    <CardContent className="p-4">
+                        <div className="font-bold mb-2 text-[#E62F2A]">Daftar Publikasi Terbaru</div>
+                        <DataTable
+                            data={tables.directPublicationData || []}
+                            columns={[
+                                { header: 'No.', accessor: 'id' },
+                                { header: 'Periset', accessor: 'periset' },
+                                { header: 'Judul Publikasi', accessor: 'judul_publikasi' },
+                                { header: 'Kelompok Riset', accessor: 'kelompok_riset' },
+                                { header: 'Jenis', accessor: 'jenis' },
+                                { header: 'Status', accessor: 'status' },
+                                { header: 'Jurnal', accessor: 'nama_jurnal' },
+                                { header: 'Scopus', accessor: 'scopus_indexed' },
+                                { header: 'Reputasi', accessor: 'reputasi' },
+                                { header: 'Tahun', accessor: 'tahun' },
                             ]}
                         />
                     </CardContent>
@@ -805,249 +735,4 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
     );
 }
 
-// --- KOMPONEN PIECHARTPLACEHOLDER BARU YANG MENGGUNAKAN SHADCN UI ASLI ---
-// PASTIKAN HANYA ADA SATU DEKLARASI KOMPONEN INI DI SELURUH FILE
-const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlaceholderProps & { data?: { jenis: string; count: number }[] }) => {
-    // Transform data for Recharts, mirip desktopData dari contoh Shadcn
-    const chartData = React.useMemo(() => {
-        const defaultMockData = [
-            { name: "Jurnal", value: 186 },
-            { name: "Prosiding", value: 305 },
-            { name: "Buku", value: 237 },
-            { name: "Lainnya", value: 173 }
-        ];
-
-        const baseData = data.length > 0 ? data : defaultMockData.map(item => ({jenis: item.name, count: item.value}));
-
-        return baseData.map((item) => ({
-            name: item.jenis,
-            value: item.count,
-            // `fill` akan diambil dari variabel CSS `--color-categoryname`
-            // yang diatur oleh ChartStyle Shadcn
-            fill: `var(--color-${item.jenis.toLowerCase().replace(/ /g, '-')})`
-        }));
-    }, [data]);
-    
-    const id = "pie-interactive-modified"; // ID unik untuk ChartContainer dan ChartStyle
-    
-    // chartConfig harus sesuai dengan ChartConfig dari Shadcn UI
-    // dan mencerminkan kategori data yang sebenarnya (jurnal, prosiding, dll.)
-    const chartConfig: ChartConfig = React.useMemo(() => {
-        const config: ChartConfig = {
-            // Definisikan juga 'Total' jika digunakan di Label tengah
-            total: {
-                label: "Total Publikasi",
-                color: "hsl(var(--foreground))", // Warna default atau sesuaikan
-            }
-        };
-
-        // Definisikan warna spesifik untuk setiap kategori
-        // Ini adalah tempat untuk menentukan mapping warna Shadcn Chart
-        // ke kategori data Anda. Anda perlu mendefinisikan variabel CSS ini
-        // (misalnya, --chart-1, --chart-2, dst.) di file CSS global atau tema Anda.
-        const staticColors = [
-            "var(--chart-1)", // untuk Jurnal
-            "var(--chart-2)", // untuk Prosiding
-            "var(--chart-3)", // untuk Buku
-            "var(--chart-4)", // untuk Lainnya
-            "var(--chart-5)", // jika ada kategori ke-5
-            "var(--chart-6)", // jika ada kategori ke-6
-        ];
-
-        chartData.forEach((item, index) => {
-            const categoryKey = item.name.toLowerCase().replace(/ /g, '-');
-            config[categoryKey] = {
-                label: item.name,
-                color: staticColors[index % staticColors.length] || "hsl(var(--primary))",
-            };
-        });
-        
-        return config;
-    }, [chartData]);
-    
-    // State untuk kategori yang aktif, sama seperti di ChartPieInteractive Shadcn
-    const [activeCategory, setActiveCategory] = React.useState(chartData.length > 0 ? chartData[0].name : '');
-    
-    const activeIndex = React.useMemo(
-        () => chartData.findIndex((item) => item.name === activeCategory),
-        [activeCategory, chartData]
-    );
-
-    const categories = React.useMemo(() => chartData.map((item) => item.name), [chartData]);
-
-    // Active shape render function, persis seperti ChartPieInteractive Shadcn
-    const renderActiveShape = ({
-        outerRadius = 0,
-        ...props
-    }: PieSectorDataItem) => (
-        <g>
-            <Sector {...props} outerRadius={outerRadius + 10} />
-            <Sector
-                {...props}
-                outerRadius={outerRadius + 25}
-                innerRadius={outerRadius + 12}
-            />
-        </g>
-    );
-    
-    return (
-        <Card data-chart={id} className={`flex flex-col shadow-lg rounded-xl ${className}`}>
-            <ChartStyle id={id} config={chartConfig} /> {/* Menggunakan ChartStyle dari Shadcn */}
-            
-            <CardHeader className="flex flex-row items-start space-y-0 pb-0">
-                <div className="grid gap-1">
-                    <CardTitle className="text-lg font-semibold text-[#E62F2A]">{title}</CardTitle>
-                    <CardDescription>Januari - Desember 2024</CardDescription>
-                </div>
-                {/* Menggunakan Shadcn Select components */}
-                <Select value={activeCategory} onValueChange={setActiveCategory}>
-                    <SelectTrigger
-                        className="ml-auto h-7 w-[130px] rounded-lg pl-2.5"
-                        aria-label="Select a value"
-                    >
-                        <SelectValue placeholder="Select Category" />
-                    </SelectTrigger>
-                    <SelectContent align="end" className="rounded-xl">
-                        {categories.map((key) => {
-                            const configItem = chartConfig[key.toLowerCase().replace(/ /g, '-') as keyof typeof chartConfig];
-
-                            if (!configItem) {
-                                return null;
-                            }
-
-                            return (
-                                <SelectItem
-                                    key={key}
-                                    value={key}
-                                    className="rounded-lg [&_span]:flex"
-                                >
-                                    <div className="flex items-center gap-2 text-xs">
-                                        <span
-                                            className="flex h-3 w-3 shrink-0 rounded-xs"
-                                            style={{
-                                                backgroundColor: `var(--color-${key.toLowerCase().replace(/ /g, '-')})`,
-                                            }}
-                                        />
-                                        {configItem?.label}
-                                    </div>
-                                </SelectItem>
-                            );
-                        })}
-                    </SelectContent>
-                </Select>
-            </CardHeader>
-            
-            <CardContent className="flex flex-1 flex-col items-center justify-center p-6 pt-0 pb-6">
-                {/* Hapus ResponsiveContainer dari sini */}
-                <ChartContainer 
-                    id={id} 
-                    config={chartConfig} 
-                    className="mx-auto" 
-                    style={{ height: '300px', width: '300px' }} // Atur tinggi dan lebar tetap
-                >
-                    {chartData.length > 0 ? (
-                        <PieChart width={300} height={300}> {/* DIMENSI LANGSUNG KE PIECHART */}
-                                {/* Menggunakan ChartTooltip Shadcn */}
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent hideLabel />}
-                                />
-                                <Pie
-                                    data={chartData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    strokeWidth={5}
-                                    activeShape={renderActiveShape}
-                                    // onMouseEnter={(_, index) => setActiveCategory(chartData[index].name)}
-                                    // onMouseLeave={() => setActiveCategory(chartData[0].name)}
-                                    isAnimationActive={true}
-                                >
-                                    {/* `Cell` tidak perlu didefinisikan secara eksplisit untuk warna jika `fill` sudah di data */}
-                                    {chartData.map((entry, index) => {
-                                        // Pastikan properti 'fill' ada di setiap item chartData
-                                        // Ini akan diambil dari `fill: var(--color-categoryname)` yang dibuat di atas
-                                        return <Cell key={`cell-${index}`} fill={entry.fill} />;
-                                    })}
-                                    <Label
-                                        content={({ viewBox }) => {
-                                            // console.log("viewBox for Label:", viewBox); // Bisa dihapus setelah debugging
-                                            
-                                            // Recharts akan menyediakan viewBox yang valid jika width/height ditetapkan langsung
-                                            // cx dan cy seharusnya ada.
-                                            const cx = viewBox?.cx ?? 150; // Fallback jika undefined (width/2)
-                                            const cy = viewBox?.cy ?? 150; // Fallback jika undefined (height/2)
-
-
-                                            const currentItem = activeIndex >= 0 ? chartData[activeIndex] : null; // Gunakan activeIndex
-
-                                            return (
-                                                <text
-                                                    x={cx}
-                                                    y={cy}
-                                                    textAnchor="middle"
-                                                    dominantBaseline="middle"
-                                                >
-                                                    <tspan
-                                                        x={cx}
-                                                        y={cy}
-                                                        className="fill-foreground text-3xl font-bold"
-                                                    >
-                                                        {currentItem ? currentItem.value.toLocaleString() : '0'}
-                                                    </tspan>
-                                                    <tspan  
-                                                        x={cx}
-                                                        y={(cy || 0) + 24}
-                                                        className="fill-muted-foreground"
-                                                    >
-                                                        {currentItem ? currentItem.name : 'N/A'} {/* PERBAIKAN DI SINI */}
-                                                    </tspan>
-                                                </text>
-                                            );
-                                        }}
-                                    />
-                                </Pie>
-                            </PieChart>
-                        
-                    ) : (
-                        <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
-                            <span>No data available</span>
-                        </div>
-                    )}
-                </ChartContainer>
-                
-                {/* Legend horizontal di bawah pie chart - Non-interactive */}
-                {chartData.length > 0 && (
-                    <div className="flex flex-wrap justify-center gap-4 mt-4 px-4">
-                        {chartData.map((entry, index) => {
-                            const configItem = chartConfig[entry.name.toLowerCase().replace(/ /g, '-') as keyof typeof chartConfig];
-                            
-                            return (
-                                <div
-                                    key={`legend-${index}`}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm"
-                                >
-                                    <div
-                                        className="w-3 h-3 rounded-full flex-shrink-0"
-                                        style={{
-                                            backgroundColor: `var(--color-${entry.name.toLowerCase().replace(/ /g, '-')})`,
-                                        }}
-                                    />
-                                    <span className="font-medium text-gray-700">
-                                        {configItem?.label || entry.name}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                        ({entry.value.toLocaleString()})
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-};
+// ModifiedPieChartPlaceholder is now imported from components/charts/ModifiedPieChartPlaceholder

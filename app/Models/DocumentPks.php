@@ -42,7 +42,6 @@ class DocumentPks extends Model
         'tahun_pks',
         'link_bukti_dukung',
         'catatan',
-        'jumlah_keuangan',
     ];
 
     /**
@@ -50,7 +49,6 @@ class DocumentPks extends Model
      */
     protected $casts = [
         'nilai' => 'double',
-        'jumlah_keuangan' => 'double',
         'tanggal_kerjasama' => 'datetime',
         'tanggal_perjanjian' => 'datetime',
         'tahun_pks' => 'integer', 

@@ -16,10 +16,10 @@ return new class extends Migration
             $t->foreignId('document_id')
             ->constrained('documents')->onDelete('cascade');
             $t->string('nama_sdm_iptek')->nullable();
-            $t->string('kelompok_riset')->nullable();
-            $t->string('jenjang_pendidikan')->nullable();
+            $t->string('kelompok_riset');
+            $t->string('jenjang_pendidikan');
             $t->string('nama_universitas')->nullable();
-            $t->string('status')->nullable();
+            $t->string('status');
             $t->text('keterangan')->nullable();
             $t->string('upload_dakung')->nullable();
             $t->year('tahun_masuk')->nullable();

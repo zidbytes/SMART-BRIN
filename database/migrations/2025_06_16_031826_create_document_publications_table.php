@@ -24,8 +24,8 @@ return new class extends Migration
             $table->string('authors6')->nullable();
             $table->string('authors7')->nullable();
             $table->string('nonprsdi_authors')->nullable();
-            $table->string('jenis')->nullable();
-            $table->string('status')->nullable();
+            $table->string('jenis');
+            $table->string('status');
             $table->string('nama_jurnal')->nullable();
             $table->boolean('scopus_indexed')->default(false);
             $table->string('reputasi')->nullable();

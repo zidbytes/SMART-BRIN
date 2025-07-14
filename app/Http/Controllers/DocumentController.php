@@ -9,8 +9,8 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class DocumentController extends Controller
 {
-
     use AuthorizesRequests;
+
     public function index()
     {
         $user = Auth::user();
@@ -34,16 +34,14 @@ class DocumentController extends Controller
         $this->authorize('create', Document::class);
 
         $validated = $request->validate([
-            'document_type' => 'required|string',
-            'title' => 'required|string',
-            'kelompok_riset' => 'required|string',
+            'document_type'   => 'required|string',
+            'title'           => 'required|string',
+            'kelompok_riset'  => 'required|string',
         ]);
 
         $document = Document::create([
-            'user_id' => Auth::id(),
-            'document_type' => $validated['document_type'],
-            'title' => $validated['title'],
-            'kelompok_riset' => $validated['kelompok_riset'],
+            'user_id'         => Auth::id(),
+            ...$validated,
         ]);
 
         return response()->json($document, 201);
@@ -55,33 +53,28 @@ class DocumentController extends Controller
 
         $user = Auth::user();
 
-        if ($user->role === 'monev') {
-            $validated = $request->validate([
-                'status' => 'required|in:submitted,revised,approved,rejected',
-                'notes' => 'nullable|string',
-                'monev_stamp' => 'nullable|date',
-            ]);
+        switch ($user->role) {
+            case 'monev':
+                $validated = $request->validate([
+                    'status'        => 'required|in:submitted,revised,approved,rejected',
+                    'notes'         => 'nullable|string',
+                    'monev_stamp'   => 'nullable|date',
+                ]);
+                break;
 
-            $document->update($validated);
+            case 'researcher':
+            case 'head':
+                $validated = $request->only(['title', 'kelompok_riset']);
+                break;
+            default:
+                abort(403, 'Unauthorized');
         }
 
-        if (in_array($user->role, ['head', 'researcher'])) {
-            $validated = $request->validate([
-                'title' => 'sometimes|required|string',
-                'kelompok_riset' => 'sometimes|required|string',
-                'status' => 'sometimes|in:submitted,revised,approved,rejected',
-                'notes' => 'nullable|string',
-                // Tidak mengizinkan `monev_stamp` dan `bulan` (bulan diambil dari created_at)
-            ]);
-
-            // Filter field yang tidak boleh diubah
-            unset($validated['monev_stamp']);
-
-            $document->update($validated);
-        }
+        $document->update($validated);
 
         return response()->json($document);
     }
+
 
     public function destroy(Document $document)
     {
@@ -89,6 +82,6 @@ class DocumentController extends Controller
 
         $document->delete();
 
-        return response()->json(['message' => 'Document deleted successfully']);
+        return response()->json(['message' => 'Document deleted successfully'], 200);
     }
 }
