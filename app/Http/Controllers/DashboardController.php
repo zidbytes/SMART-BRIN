@@ -21,6 +21,14 @@ class DashboardController extends Controller
 {
     public function index(): Response
     {
+        // Debug auth and notes
+        $user = \Illuminate\Support\Facades\Auth::user();
+        \Illuminate\Support\Facades\Log::info('Current user', ['user' => $user ? [
+            'id' => $user->id, 
+            'name' => $user->name, 
+            'role' => $user->role
+        ] : 'No user']);
+        
         $totalPublications     = Document::where('document_type', 'publication')->count();
         $scopusIndexedCount    = DocumentPublication::where('scopus_indexed', true)->count();
         $nonScopusCount        = DocumentPublication::where('scopus_indexed', false)->count();
@@ -77,13 +85,26 @@ class DashboardController extends Controller
             ['jenis' => 'Non-SDM PRSDI', 'count' => DocumentPelatihanLuarNegeri::whereNotNull('non_sdm_prsdi')->count()],
         ];
 
-        $publicationNotes     = $this->getPublicationsWithNotesDirectly();
+        $publicationsWithNotes = $this->getPublicationsWithNotesDirectly();
         $detailPublications   = $this->getDetailedPublications();
         $directPublicationData= $this->getDirectPublicationData();
+        
+        // Debug publication notes
+        \Illuminate\Support\Facades\Log::info('Publications with notes count', ['count' => count($publicationsWithNotes)]);
+        \Illuminate\Support\Facades\Log::info('Sample publication notes', [
+            'notes' => $publicationsWithNotes->take(2)->toArray()
+        ]);
 
         $year   = date('Y');
         $target = TargetTahunan::where('tahun', $year)->first() ?? TargetTahunan::latest('tahun')->first();
 
+        // Debug before rendering
+        \Illuminate\Support\Facades\Log::info('Before rendering dashboard', [
+            'publicationsWithNotes' => count($publicationsWithNotes),
+            'detailPublications' => count($detailPublications),
+            'directPublicationData' => count($directPublicationData),
+        ]);
+        
         return Inertia::render('dashboard', [
             'kpi' => [
                 'totalPublications'     => $totalPublications,
@@ -98,22 +119,37 @@ class DashboardController extends Controller
                 'sdmByDegree', 'sdmByUniversity', 'purwarupaByGroup', 'purwarupaByStatus',
                 'pdvrByType', 'pdvrParticipation'
             ),
-            'tables' => compact('publicationNotes', 'detailPublications', 'directPublicationData')
+            'tables' => compact('publicationsWithNotes', 'detailPublications', 'directPublicationData')
         ]);
     }
 
     private function buildScopusQuartileChart(int $scopus, int $nonScopus): array
     {
-        $q1 = (int)($scopus * 0.2);
-        $q2 = (int)($scopus * 0.3);
-        $q3 = (int)($scopus * 0.25);
-        $q4 = $scopus - $q1 - $q2 - $q3;
+        // Ambil data quartile yang sebenarnya dari database
+        $q1Count = DocumentPublication::where('reputasi', 'Q1')->count();
+        $q2Count = DocumentPublication::where('reputasi', 'Q2')->count();
+        $q3Count = DocumentPublication::where('reputasi', 'Q3')->count();
+        $q4Count = DocumentPublication::where('reputasi', 'Q4')->count();
+        
+        // Hitung ulang total Scopus berdasarkan quartile aktual
+        $actualScopusTotal = $q1Count + $q2Count + $q3Count + $q4Count;
+        
+        // Log perbedaan untuk debugging
+        \Illuminate\Support\Facades\Log::info('Scopus Data Comparison', [
+            'estimated_total' => $scopus,
+            'actual_total' => $actualScopusTotal,
+            'q1' => $q1Count,
+            'q2' => $q2Count,
+            'q3' => $q3Count,
+            'q4' => $q4Count,
+            'non_scopus' => $nonScopus
+        ]);
 
         return [
-            ['name' => 'Q1', 'count' => $q1],
-            ['name' => 'Q2', 'count' => $q2],
-            ['name' => 'Q3', 'count' => $q3],
-            ['name' => 'Q4', 'count' => $q4],
+            ['name' => 'Q1', 'count' => $q1Count],
+            ['name' => 'Q2', 'count' => $q2Count],
+            ['name' => 'Q3', 'count' => $q3Count],
+            ['name' => 'Q4', 'count' => $q4Count],
             ['name' => 'Non-Scopus', 'count' => $nonScopus],
         ];
     }
@@ -202,7 +238,25 @@ class DashboardController extends Controller
 
     private function getPublicationsWithNotesDirectly()
     {
-        return DocumentPublication::join('documents', 'document_publications.document_id', '=', 'documents.id')
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // Debug
+        \Illuminate\Support\Facades\Log::info('Getting publications with notes', [
+            'user_id' => $user ? $user->id : 'no user',
+            'role' => $user ? $user->role : 'no role'
+        ]);
+        
+        // Count notes in database first for debugging
+        $notesCount = Document::whereNotNull('notes')->where('notes', '!=', '')->count();
+        \Illuminate\Support\Facades\Log::info('Total documents with notes in database', ['count' => $notesCount]);
+
+        // If no real notes in database, return empty collection
+        if ($notesCount === 0 && $user && $user->role === 'researcher') {
+            \Illuminate\Support\Facades\Log::info('No notes in database, returning empty collection');
+            return collect([]);
+        }
+
+        $query = DocumentPublication::join('documents', 'document_publications.document_id', '=', 'documents.id')
             ->join('users', 'documents.user_id', '=', 'users.id')
             ->select(
                 'document_publications.id',
@@ -212,24 +266,41 @@ class DashboardController extends Controller
                 'document_publications.status',
                 'document_publications.scopus_indexed',
                 'users.name as periset',
+                'users.id as user_id',
                 DB::raw('YEAR(documents.created_at) as tahun')
             )
             ->whereNotNull('documents.notes')
-            ->where('documents.notes', '!=', '')
-            ->latest('documents.created_at')
-            ->limit(10)
-            ->get()
-            ->map(function ($i) {
-                $status = $i->status ?: ($i->scopus_indexed ? 'Scopus' : 'Non-Scopus');
-                return [
-                    'id'       => $i->id,
-                    'judul'    => $i->judul,
-                    'catatan'  => $i->catatan,
-                    'jenis'    => $i->jenis,
-                    'status'   => $status,
-                    'periset'  => $i->periset,
-                    'tahun'    => $i->tahun,
-                ];
-            });
+            ->where('documents.notes', '!=', '');
+        
+        // If the user is a researcher, only show their own notes
+        if ($user && $user->role === 'researcher') {
+            $query->where('documents.user_id', $user->id);
+            \Illuminate\Support\Facades\Log::info('Filtering by user_id', ['user_id' => $user->id]);
+        }
+        
+        $results = $query->latest('documents.created_at')->limit(10)->get();
+        
+        // Debug results
+        \Illuminate\Support\Facades\Log::info('Query results count', ['count' => $results->count()]);
+        
+        // Return empty result if no data found
+        if ($results->isEmpty() && $user && $user->role === 'researcher') {
+            \Illuminate\Support\Facades\Log::info('No results from query but user is researcher, returning empty collection');
+            return collect([]);
+        }
+        
+        return $results->map(function ($i) {
+            $status = $i->status ?: ($i->scopus_indexed ? 'Scopus' : 'Non-Scopus');
+            return [
+                'id'       => $i->id,
+                'judul'    => $i->judul,
+                'catatan'  => $i->catatan,
+                'jenis'    => $i->jenis,
+                'status'   => $status,
+                'periset'  => $i->periset,
+                'user_id'  => $i->user_id,
+                'tahun'    => $i->tahun,
+            ];
+        });
     }
 }

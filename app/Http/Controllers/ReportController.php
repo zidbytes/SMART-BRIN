@@ -30,65 +30,74 @@ class ReportController extends Controller
     {
         $this->authorize('viewReport', Document::class);
 
-        return Inertia::render('ReportCapaian', $this->getReportData($request));
+        return Inertia::render('report-capaian', $this->getReportData($request));
     }
 
     public function export(Request $request)
     {
         $this->authorize('viewReport', Document::class);
 
-        $data = $this->getReportData($request);
-        $format = $request->input('format', 'excel');
-        $period = $this->getPeriodDisplay($data);
-        
-        // Format filename
-        $filename = 'laporan-capaian_' . $period;
-        
-        // Calculate percentage and status for each row
-        $rows = collect($data['capaian'])->map(
-            function($value, $key) use ($data) {
-                $target = $data['target'][$key] ?? 0;
-                $percentage = $target > 0 ? min(100, round(($value / $target) * 100)) : 0;
-                
-                $status = 'Belum Tercapai';
-                if ($percentage >= 100) {
-                    $status = 'Tercapai';
-                } elseif ($percentage >= 75) {
-                    $status = 'Hampir Tercapai';
-                }
-                
-                // Format dana_eksternal as currency
-                $targetFormatted = $key === 'dana_eksternal' 
-                    ? 'Rp ' . number_format($target, 0, ',', '.') 
-                    : $target;
+        DB::beginTransaction();
+        try {
+            $data = $this->getReportData($request);
+            $format = $request->input('format', 'excel');
+            $period = $this->getPeriodDisplay($data);
+            
+            // Format filename
+            $filename = 'laporan-capaian_' . $period;
+            
+            // Calculate percentage and status for each row
+            $rows = collect($data['capaian'])->map(
+                function($value, $key) use ($data) {
+                    $target = $data['target'][$key] ?? 0;
+                    $percentage = $target > 0 ? min(100, round(($value / $target) * 100)) : 0;
                     
-                $valueFormatted = $key === 'dana_eksternal'
-                    ? 'Rp ' . number_format($value, 0, ',', '.')
-                    : $value;
-                
-                return [
-                    ucfirst(str_replace('_', ' ', $key)),
-                    $targetFormatted,
-                    $valueFormatted,
-                    $percentage . '%',
-                    $status
-                ];
-            }
-        )->values()->toArray();
+                    $status = 'Belum Tercapai';
+                    if ($percentage >= 100) {
+                        $status = 'Tercapai';
+                    } elseif ($percentage >= 75) {
+                        $status = 'Hampir Tercapai';
+                    }
+                    
+                    // Format dana_eksternal as currency
+                    $targetFormatted = $key === 'dana_eksternal' 
+                        ? 'Rp ' . number_format($target, 0, ',', '.') 
+                        : $target;
+                        
+                    $valueFormatted = $key === 'dana_eksternal'
+                        ? 'Rp ' . number_format($value, 0, ',', '.')
+                        : $value;
+                    
+                    return [
+                        ucfirst(str_replace('_', ' ', $key)),
+                        $targetFormatted,
+                        $valueFormatted,
+                        $percentage . '%',
+                        $status
+                    ];
+                }
+            )->values()->toArray();
 
-        switch ($format) {
-            case 'pdf':
-                return $this->exportPdf($rows, $period, $filename);
-            
-            case 'word':
-                return $this->exportWord($rows, $period, $filename);
-            
-            case 'excel':
-            default:
-                return Excel::download(
-                    new ReportExport($rows),
-                    $filename . '.xlsx'
-                );
+            DB::commit();
+
+            switch ($format) {
+                case 'pdf':
+                    return $this->exportPdf($rows, $period, $filename);
+                
+                case 'word':
+                    return $this->exportWord($rows, $period, $filename);
+                
+                case 'excel':
+                default:
+                    return Excel::download(
+                        new ReportExport($rows),
+                        $filename . '.xlsx'
+                    );
+            }
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return back()->with('error', 'Gagal mengekspor laporan: ' . $e->getMessage());
         }
     }
     
@@ -194,8 +203,8 @@ class ReportController extends Controller
             'kerjasama_nasional'       => $this->countWithFilter(DocumentPks::class, $range, ['jenis' => 'Dalam Negeri']),
             'dana_eksternal'           => $this->sumDanaEksternal($range),
             'sdm_studi_lanjut'         => $this->countWithFilter(DocumentLoaStudiLanjut::class, $range),
-            'postdoc_visiting'         => $this->countWithFilter(DocumentPelatihanLuarNegeri::class, $range, ['jenis' => 'postdoc']),
-            'pelatihan_internasional'  => $this->countWithFilter(DocumentPelatihanLuarNegeri::class, $range, ['jenis' => 'pelatihan']),
+            'postdoc_visiting'         => $this->countWithFilter(DocumentPelatihanLuarNegeri::class, $range, ['status' => ['POSTDOCTORAL', 'VISITING RESEARCH']]),
+            'pelatihan_internasional'  => $this->countWithFilter(DocumentPelatihanLuarNegeri::class, $range, ['jenis' => 'Luar Negeri']),
         ];
 
         $target = TargetTahunan::where('tahun', $tahun)->first()?->toArray() ?? [];
@@ -215,7 +224,15 @@ class ReportController extends Controller
     private function countWithFilter(string $modelClass, \Closure $range, array $extra = []): int
     {
         return $modelClass::whereHas('document', $range)
-            ->when($extra, fn($q) => $q->where($extra))
+            ->when($extra, function($q) use ($extra) {
+                foreach ($extra as $key => $value) {
+                    if (is_array($value)) {
+                        $q->whereIn($key, $value);
+                    } else {
+                        $q->where($key, $value);
+                    }
+                }
+            })
             ->count();
     }
 

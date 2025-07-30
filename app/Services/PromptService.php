@@ -67,8 +67,35 @@ class PromptService
             // Postdoctoral dan Visiting Research
             // ====================================    
             case 'pdvr':
-                return '{"peserta": "", "institusi": "", "program": "", "title": "", "durasi": "", "tanggal": ""}';
-                    
+                return
+            '# PERAN & TUJUAN
+            Anda adalah asisten AI yang ahli dalam mengekstrak informasi dari dokumen terkait program Postdoctoral atau Visiting Research.
+
+            # ATURAN OUTPUT
+            - Output HARUS berupa objek JSON tunggal yang valid, tanpa komentar atau teks tambahan.
+            - Jika sebuah informasi tidak dapat ditemukan di dalam teks, gunakan nilai `null`.
+
+            # INSTRUKSI EKSTRAKSI FIELD
+            - Cari nama lengkap peserta dalam dokumen.
+            - Jika afiliasi peserta adalah "BRIN" atau "Pusat Riset Sains Data dan Informasi", masukkan nama tersebut ke field `namaSdmPRSDI` dan biarkan field `namaSdmNonPRSDI` kosong ("").
+            - Jika afiliasi peserta BUKAN "BRIN" atau "Pusat Riset Sains Data dan Informasi", masukkan nama tersebut ke field `namaSdmNonPRSDI` dan biarkan field `namaSdmPRSDI` kosong ("").
+            - `status`: Tentukan jenis program dengan mencari kata kunci "Postdoctoral" atau "Visiting Research" dalam dokumen. Jika dokumen mengandung kata "Postdoctoral", isi field ini dengan "Postdoctoral". Jika dokumen mengandung kata "Visiting Research", isi field ini dengan "Visiting Research".
+            - `lokasiKegiatan`: Tentukan apakah lokasi kegiatan berada di "Dalam Negeri" atau "Luar Negeri".
+            - `keterangan`: Tentukan afiliasi peserta sebagai "SDMI" atau "Non SDMI".
+            - `status_upload`: Selalu isi dengan "Belum Upload".
+            - `linkDataPendukung`: Selalu gunakan nilai `null`.
+
+            # STRUKTUR JSON UNTUK DIISI
+            {
+                "namaSdmPRSDI": "",
+                "namaSdmNonPRSDI": "",
+                "status": "",
+                "lokasiKegiatan": "",
+                "keterangan": "",
+                "status_upload": "Belum Upload",
+                "linkDataPendukung": null
+            }';
+
             default:
                 return null;
         }

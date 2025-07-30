@@ -8,6 +8,7 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
+    CardFooter,
 } from "@/components/ui/card";
 import {
     ChartConfig,
@@ -24,15 +25,16 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-interface ChartPlaceholderProps {
+// Updated to handle both data formats - either with jenis or name property
+export interface ModifiedPieChartPlaceholderProps {
     title: string;
     className?: string;
-    dropdown?: boolean;
-    dropdownCaption?: string;
+    data: { jenis: string; count: number; name?: string; }[];
+    footerNote?: string; // Tambahkan prop footerNote
+    dataYear?: number; // Tahun data yang ditampilkan
 }
 
-// Updated to handle both data formats - either with jenis or name property
-const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlaceholderProps & { data?: { jenis?: string; name?: string; count: number }[] }) => {
+const ModifiedPieChartPlaceholder = ({ title, className, data = [], footerNote, dataYear = 2024 }: ModifiedPieChartPlaceholderProps) => {
     // Transform data for Recharts, mirip desktopData dari contoh Shadcn
     const chartData = React.useMemo(() => {
         // Use actual data from backend, only fallback to mock data if necessary
@@ -64,17 +66,19 @@ const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlace
             }
         };
 
-        // Definisikan warna spesifik untuk setiap kategori
-        // Ini adalah tempat untuk menentukan mapping warna Shadcn Chart
-        // ke kategori data Anda. Anda perlu mendefinisikan variabel CSS ini
-        // (misalnya, --chart-1, --chart-2, dst.) di file CSS global atau tema Anda.
+        // Definisikan warna spesifik untuk setiap kategori dengan tema merah dan putih
+        // Menggunakan variasi merah untuk tema BRIN
         const staticColors = [
-            "var(--chart-1)", 
-            "var(--chart-2)", 
-            "var(--chart-3)", 
-            "var(--chart-4)", 
-            "var(--chart-5)", 
-            "var(--chart-6)",
+            "#E62F2A", // Merah BRIN primary
+            "#B91C1C", // Merah tua
+            "#DC2626", // Merah medium
+            "#EF4444", // Merah
+            "#F87171", // Merah muda
+            "#FECACA", // Merah sangat muda
+            "#991B1B", // Merah sangat tua
+            "#F04438", // Merah accent
+            "#F97066", // Merah muda accent
+            "#FDA29B", // Merah sangat muda accent
         ];
 
         chartData.forEach((item, index) => {
@@ -120,7 +124,7 @@ const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlace
             <CardHeader className="flex flex-row items-start space-y-0 pb-0">
                 <div className="grid gap-1">
                     <CardTitle className="text-lg font-semibold text-[#E62F2A]">{title}</CardTitle>
-                    <CardDescription>Januari - Desember 2024</CardDescription>
+                    <CardDescription>Januari - Desember {dataYear}</CardDescription>
                 </div>
                 {/* Menggunakan Shadcn Select components */}
                 <Select value={activeCategory} onValueChange={setActiveCategory}>
@@ -185,16 +189,29 @@ const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlace
                                     outerRadius={100}
                                     strokeWidth={5}
                                     activeShape={renderActiveShape}
-                                    activeIndex={activeIndex}
-                                    // onMouseEnter={(_, index) => setActiveCategory(chartData[index].name)}
-                                    // onMouseLeave={() => setActiveCategory(chartData[0].name)}
+                                    onMouseEnter={(_, index) => {
+                                        if (chartData[index]) {
+                                            setActiveCategory(chartData[index].name);
+                                        }
+                                    }}
                                     isAnimationActive={true}
                                 >
-                                    {/* `Cell` tidak perlu didefinisikan secara eksplisit untuk warna jika `fill` sudah di data */}
+                                    {/* Define cells with red and white theme colors */}
                                     {chartData.map((entry, index) => {
-                                        // Pastikan properti 'fill' ada di setiap item chartData
-                                        // Ini akan diambil dari `fill: var(--color-categoryname)` yang dibuat di atas
-                                        return <Cell key={`cell-${index}`} fill={entry.fill} />;
+                                        // Red and white theme color palette
+                                        const redColors = [
+                                            "#E62F2A", // Merah BRIN primary
+                                            "#B91C1C", // Merah tua
+                                            "#DC2626", // Merah medium
+                                            "#EF4444", // Merah
+                                            "#F87171", // Merah muda
+                                            "#FECACA", // Merah sangat muda
+                                            "#991B1B", // Merah sangat tua
+                                            "#F04438", // Merah accent
+                                            "#F97066", // Merah muda accent
+                                            "#FDA29B", // Merah sangat muda accent
+                                        ];
+                                        return <Cell key={`cell-${index}`} fill={redColors[index % redColors.length]} />;
                                     })}
                                     <Label
                                         content={({ viewBox }) => {
@@ -248,6 +265,20 @@ const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlace
                         {chartData.map((entry, index) => {
                             const configItem = chartConfig[entry.name.toLowerCase().replace(/ /g, '-') as keyof typeof chartConfig];
                             
+                            // Define red color palette for legend
+                            const legendRedColors = [
+                                "#E62F2A", // Merah BRIN primary
+                                "#B91C1C", // Merah tua
+                                "#DC2626", // Merah medium
+                                "#EF4444", // Merah
+                                "#F87171", // Merah muda
+                                "#FECACA", // Merah sangat muda
+                                "#991B1B", // Merah sangat tua
+                                "#F04438", // Merah accent
+                                "#F97066", // Merah muda accent
+                                "#FDA29B", // Merah sangat muda accent
+                            ];
+                            
                             return (
                                 <div
                                     key={`legend-${index}`}
@@ -256,7 +287,7 @@ const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlace
                                     <div
                                         className="w-3 h-3 rounded-full flex-shrink-0"
                                         style={{
-                                            backgroundColor: `var(--color-${entry.name.toLowerCase().replace(/ /g, '-')})`,
+                                            backgroundColor: legendRedColors[index % legendRedColors.length],
                                         }}
                                     />
                                     <span className="font-medium text-gray-700">
@@ -271,6 +302,18 @@ const ModifiedPieChartPlaceholder = ({ title, className, data = [] }: ChartPlace
                     </div>
                 )}
             </CardContent>
+
+            {/* Footer untuk total dan keterangan tambahan */}
+            <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 items-center font-medium leading-none">
+                    Total: <span className="font-bold">{chartData.reduce((sum, item) => sum + item.value, 0).toLocaleString()}</span>
+                </div>
+                {footerNote && (
+                    <div className="text-gray-500 leading-none text-xs mt-1">
+                        <span className="font-medium">Keterangan:</span> {footerNote}
+                    </div>
+                )}
+            </CardFooter>
         </Card>
     );
 };

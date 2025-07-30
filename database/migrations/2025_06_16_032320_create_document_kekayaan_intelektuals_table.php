@@ -28,11 +28,10 @@ return new class extends Migration
             $t->string('inventors8')->nullable();
             $t->string('nonprsdi_inventors')->nullable();   
             $t->string('jenis');
-            $t->string('no_pendaftaran')->nullable();
-            $t->date('tanggal_daftar')->nullable();
+            $t->string('no_pendaftaran');
             $t->string('no_sertifikat')->nullable();
             $t->date('tanggal_sertifikasi')->nullable();
-            $t->string('link_upload')->nullable();
+            $t->string('status_upload');
             $t->string('link_dokumen')->nullable();
             $t->timestamps();
         });

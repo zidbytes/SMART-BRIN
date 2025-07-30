@@ -13,17 +13,18 @@ export type DocumentKey = 'publikasi-global' | 'kekayaan-intelektual' | 'perjanj
 
 export type DocumentType = 'Publikasi' | 'KI' | 'PKS' | 'Purwarupa' | 'StudiLanjut' | 'PDVR';
 
-const mapToDocumentType = (key: DocumentKey): DocumentType => {
-    switch (key) {
-        case 'publikasi-global':
+// Mapping untuk menerjemahkan tipe dokumen dari URL ke tipe yang digunakan oleh fieldTemplates
+const mapTypeToDocumentType = (type: string): DocumentType => {
+    switch (type) {
+        case 'publication':
             return 'Publikasi';
-        case 'kekayaan-intelektual':
+        case 'ki':
             return 'KI';
-        case 'perjanjian-kerjasama':
+        case 'pks':
             return 'PKS';
         case 'purwarupa':
             return 'Purwarupa';
-        case 'studi-lanjut':
+        case 'loa':
             return 'StudiLanjut';
         case 'pdvr':
             return 'PDVR';
@@ -32,35 +33,78 @@ const mapToDocumentType = (key: DocumentKey): DocumentType => {
     }
 };
 
-interface Props {
+// Mapping untuk menerjemahkan tipe dokumen ke DocumentKey
+const mapTypeToDocumentKey = (type: string): DocumentKey => {
+    switch (type) {
+        case 'publication':
+            return 'publikasi-global';
+        case 'ki':
+            return 'kekayaan-intelektual';
+        case 'pks':
+            return 'perjanjian-kerjasama';
+        case 'purwarupa':
+            return 'purwarupa';
+        case 'loa':
+            return 'studi-lanjut';
+        case 'pdvr':
+            return 'pdvr';
+        default:
+            return 'publikasi-global';
+    }
+};
+
+interface DocumentUpdateDialogProps {
     open: boolean;
     onClose: () => void;
     onSubmit: (data: Record<string, string>) => void;
-    metadata: Record<string, string>;
-    setMetadata: (data: Record<string, string>) => void;
-    documentKey: DocumentKey;
-    mode: 'review' | 'manual';
+    documentData: Record<string, unknown>;
+    documentType: string;
 }
 
-export function DocumentReviewDialog({ open, onClose, onSubmit, metadata, setMetadata, documentKey, mode }: Props) {
-    const documentType = mapToDocumentType(documentKey);
+export function DocumentUpdateDialog({ open, onClose, onSubmit, documentData, documentType }: DocumentUpdateDialogProps) {
+    const [formData, setFormData] = React.useState<Record<string, string>>({});
+    
+    // Konversi tipe dokumen ke format yang dikenali oleh fieldTemplates
+    const docType = mapTypeToDocumentType(documentType);
+    const documentKey = mapTypeToDocumentKey(documentType);
+    
+    // Mengisi formData dengan data dokumen yang ada saat dialog terbuka
+    React.useEffect(() => {
+        if (open && documentData) {
+            const initialData: Record<string, string> = {};
+            
+            // Mengisi initialData dengan nilai dari documentData
+            // Mengubah properti sesuai dengan nama field di fieldTemplates
+            if (fieldTemplates[docType]) {
+                fieldTemplates[docType].forEach((field) => {
+                    // Coba ambil data dari documentData berdasarkan label field
+                    // atau berdasarkan nama field
+                    const value = documentData[field.label] !== undefined 
+                        ? documentData[field.label] 
+                        : (documentData[field.name] !== undefined 
+                            ? documentData[field.name] 
+                            : '');
+                    
+                    initialData[field.name] = String(value !== null && value !== undefined ? value : '');
+                });
+            }
+            
+            setFormData(initialData);
+        }
+    }, [open, documentData, docType]);
 
     const handleChange = (key: string, value: string) => {
-        setMetadata({ ...metadata, [key]: value });
+        setFormData({ ...formData, [key]: value });
     };
 
     const fullDocumentTitle = React.useMemo(() => {
         const option = documentOptions.find((opt) => opt.value === documentKey);
-        return option ? `REVIEW ${option.label.toUpperCase()}` : `REVIEW DOKUMEN ${documentType.toUpperCase()}`;
-    }, [documentKey, documentType]);
+        return option ? `UPDATE ${option.label.toUpperCase()}` : `UPDATE DOKUMEN ${docType.toUpperCase()}`;
+    }, [documentKey, docType]);
 
-    if (!metadata) return null;
+    if (!documentData) return null;
 
-    const fields: FieldTemplate[] = fieldTemplates[documentType] || [];
-
-    const dialogTitle = mode === 'manual' ? 'Form Input Manual' : fullDocumentTitle;
-    const dialogDescription =
-        mode === 'manual' ? 'Silakan isi semua data yang diperlukan di bawah ini.' : 'Silakan cek kembali dan lengkapi data yang kosong.';
+    const fields: FieldTemplate[] = fieldTemplates[docType] || [];
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -72,35 +116,22 @@ export function DocumentReviewDialog({ open, onClose, onSubmit, metadata, setMet
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        onSubmit(metadata);
+                        onSubmit(formData);
                     }}
                 >
                     <DialogHeader className="font-poppins items-center text-[#E62F2A]">
-                        <DialogTitle className="items-center text-center">{dialogTitle}</DialogTitle>
-                        <DialogDescription className="mt-2">{dialogDescription}</DialogDescription>
+                        <DialogTitle className='items-center text-center'>{fullDocumentTitle}</DialogTitle>
+                        <DialogDescription className="mt-2">
+                            Silakan cek kembali dan perbarui data yang diperlukan.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         {fields.map((field) => (
                             <div key={field.name} className="grid gap-2">
-                                <Label htmlFor={field.name}>
-                                    {field.label}
-                                    {field.required && <span className="text-red-500"> *</span>}
-                                    {field.link && (
-                                        <span className="ml-2">
-                                            <a
-                                                href={field.link.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-sm text-blue-600 underline hover:text-blue-800"
-                                            >
-                                                ({field.link.text})
-                                            </a>
-                                        </span>
-                                    )}
-                                </Label>
+                                <Label htmlFor={field.name}>{field.label}</Label>
                                 {field.type === 'select' ? (
                                     <StyledSelect
-                                        value={metadata[field.name] || ''}
+                                        value={formData[field.name] || ''}
                                         onValueChange={(value) => handleChange(field.name, value)}
                                         placeholder={`-- Pilih ${field.label} --`}
                                         options={field.options || []}
@@ -109,10 +140,10 @@ export function DocumentReviewDialog({ open, onClose, onSubmit, metadata, setMet
                                     <Input
                                         id={field.name}
                                         type={field.type}
-                                        value={metadata[field.name] || ''}
+                                        value={formData[field.name] || ''}
                                         onChange={(e) => handleChange(field.name, e.target.value)}
                                         placeholder={field.placeholder || ''}
-                                        className="rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
                                 )}
                             </div>
@@ -120,11 +151,7 @@ export function DocumentReviewDialog({ open, onClose, onSubmit, metadata, setMet
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="cursor-pointer bg-[#fdaaa8] text-white hover:bg-[#E62F2A] hover:text-white"
-                            >
+                            <Button type="button" variant="outline" className="cursor-pointer bg-[#fdaaa8] text-white hover:text-white hover:bg-[#E62F2A]">
                                 Cancel
                             </Button>
                         </DialogClose>

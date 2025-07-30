@@ -3,9 +3,7 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-// --- PERUBAHAN IMPOR DI SINI ---
 import { Link, usePage } from '@inertiajs/react';
-// --- AKHIR PERUBAHAN IMPOR ---
 import { BookOpen, FileBarChart, FileText, Folder, Goal, LayoutGrid, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -18,12 +16,10 @@ interface User {
 }
 
 // 2. Definisikan tipe untuk props yang dibagikan dari backend
-// Menghapus 'extends PageProps' dan menambahkan index signature
 interface SharedProps {
     auth: {
         user: User | null;
     };
-    // Menambahkan properti lain yang dibagikan untuk type safety yang lebih baik
     name: string;
     quote: {
         message: string;
@@ -31,7 +27,6 @@ interface SharedProps {
     };
     ziggy: object;
     sidebarOpen: boolean;
-    // Menambahkan index signature untuk memperbolehkan properti lain
     [key: string]: unknown;
 }
 
@@ -75,21 +70,7 @@ const allNavItems: (NavItem & { roles: string[] })[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
-
 export function AppSidebar() {
-    // 3. Terapkan tipe SharedProps ke hook usePage
     const { props } = usePage<SharedProps>();
     const userRole = props.auth?.user?.role;
 
@@ -122,7 +103,6 @@ export function AppSidebar() {
 
             <SidebarFooter className="bg-[--sidebar] text-[--sidebar-foreground]">
                 {/* Pastikan NavFooter dan NavUser juga menggunakan warna yang harmonis */}
-                <NavFooter items={footerNavItems} className="mt-auto text-[--sidebar-foreground]" />
                 <NavUser className="text-[--sidebar-foreground]" />
             </SidebarFooter>
         </Sidebar>

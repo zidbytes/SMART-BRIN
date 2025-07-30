@@ -101,6 +101,7 @@ class DetailController extends Controller
         // 2. Validasi request
         $validatedData = $request->validate([
             'notes' => 'nullable|string|max:1000',
+            'status_monev' => 'nullable|string|max:100', // Tambahkan validasi status_monev
         ]);
 
         // 3. Dapatkan kelas model berdasarkan tipe
@@ -111,15 +112,29 @@ class DetailController extends Controller
         $item = $modelClass::with('document')->findOrFail($id);
         $document = $item->document;
 
-        // 5. Update catatan
-        $document->update([
-            'notes' => $validatedData['notes']
-        ]);
+        // 5. Buat array updateData untuk mengumpulkan data yang akan diupdate
+        $updateData = [];
+        
+        // Tambahkan notes ke updateData jika ada dalam request
+        if ($request->has('notes')) {
+            $updateData['notes'] = $validatedData['notes'];
+        }
+        
+        // Tambahkan status ke updateData jika status_monev ada dalam request
+        if ($request->has('status_monev')) {
+            $updateData['status'] = $validatedData['status_monev'];
+        }
+        
+        // Lakukan update jika ada data yang perlu diupdate
+        if (!empty($updateData)) {
+            $document->update($updateData);
+        }
 
         // 6. Return JSON response untuk API
         return response()->json([
             'success' => true,
-            'message' => 'Catatan berhasil diperbarui.'
+            'message' => 'Data berhasil diperbarui.',
+            'updated_fields' => array_keys($updateData)
         ]);
     }
 
@@ -187,11 +202,15 @@ class DetailController extends Controller
         $formatDate = fn($date, $format = 'Y-m-d') => optional($date)->format($format) ?? '-';
         $isStamped = !is_null($doc->monev_stamp);
 
+        // Ambil bulan dari waktu stamp jika ada, atau gunakan teks "-" jika tidak ada stamp
+        $bulanMonev = $isStamped ? $formatDate($doc->monev_stamp, 'F') : '-';
+        
         $common = [
             'No' => $item->id,
             'Periode Input' => $formatDate($doc->created_at),
             'Monev Stamp' => $isStamped,
             'Periode Stamp' => $formatDate($doc->monev_stamp, 'Y-m-d H:i'),
+            'Bulan Monev' => $bulanMonev, // Tambahkan bulan dari waktu stamp
             'Status Dokumen' => $doc->status ?? '-',
             'Catatan Monev' => $doc->notes ?? '-',
         ];

@@ -23,20 +23,18 @@ return new class extends Migration
             $t->string('pic_nonprsdi')->nullable();  
             $t->string('tipe');
             $t->string('jenis');
-            $t->string('sumber')->nullable();
-            $t->string('output')->nullable();
+            $t->string('sumber');
+            $t->string('output');
             $t->string('pihak_k3')->nullable();
             $t->double('nilai')->nullable();
             $t->text('keterangan')->nullable();
             $t->string('no_kerjasama')->nullable();
             $t->date('tanggal_kerjasama')->nullable();
             $t->string('no_perjanjian')->nullable();
-            $t->date('tanggal_perjanjian')->nullable();
-            $t->string('link_upload')->nullable();
             $t->string('status_upload');
+            $t->date('tanggal_perjanjian')->nullable();
             $t->year('tahun_pks')->nullable();
             $t->string('link_bukti_dukung')->nullable();
-            $t->text('catatan')->nullable();
             $t->timestamps();
         });
     }

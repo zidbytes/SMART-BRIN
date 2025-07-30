@@ -26,10 +26,10 @@ return new class extends Migration
             $table->string('nonprsdi_authors')->nullable();
             $table->string('jenis');
             $table->string('status');
+            $table->string('status_upload');
             $table->string('nama_jurnal')->nullable();
             $table->boolean('scopus_indexed')->default(false);
             $table->string('reputasi')->nullable();
-            $table->string('file_drive_link')->nullable();
             $table->string('url')->nullable();
             $table->string('doi')->nullable();
             $table->timestamps();

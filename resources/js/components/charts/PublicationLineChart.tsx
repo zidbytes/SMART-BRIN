@@ -22,15 +22,17 @@ export interface LineChartProps {
     data: { name: string; total: number }[];
     className?: string;
     dropdown?: boolean;
+    dataYear?: number; // Tahun data yang ditampilkan
 }
 
 const PublicationLineChart: React.FC<LineChartProps> = ({ 
     title, 
     data, 
     className, 
-    dropdown = false 
+    dropdown = false,
+    dataYear = 2024
 }) => {
-    const [selectedYear, setSelectedYear] = useState<string>('2024');
+    const [selectedYear, setSelectedYear] = useState<string>(dataYear.toString());
     
     // Transform data for Recharts
     const chartData = data.map(item => ({

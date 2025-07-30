@@ -21,8 +21,8 @@
                 $t->string('status');
                 $t->string('jenis');
                 $t->text('keterangan');
+                $t->string('status_upload');
                 $t->string('upload_dakung')->nullable();
-                $t->string('direct_link')->nullable();
                 $t->timestamps();
             });
         }

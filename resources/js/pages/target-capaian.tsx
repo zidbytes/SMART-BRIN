@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import patternBg from '../assets/bg-pattern3.png';
-import { transparentScrollbarCSS } from '@/styles/scrollbar';
+import { transparentScrollbarCSS } from '../styles/scrollbar';
 
 interface Target {
     id: number;
@@ -121,8 +121,7 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
             <div
                 className="flex h-full flex-1 flex-col gap-4 rounded-xl p-6 overflow-x-auto transparent-scrollbar"
                 style={{
-                    backgroundImage: `url(${patternBg})`,
-                    // backgroundColor: '#f3f4f6',
+                    backgroundImage: `url(${patternBg})`
                 }}
             >
                 <div className="max-w-full mx-auto mt-8 p-6 bg-white rounded shadow">

@@ -26,10 +26,9 @@ return new class extends Migration
             $table->text('non_sivitas_prsdi')->nullable();
             $table->string('jenis');
             $table->string('status');
-            $table->string('nama_mitra')->nullable();
-            $table->string('upload_gdrive')->nullable();
+            $table->string('status_upload');
+            $table->string('nama_mitra');
             $table->string('link')->nullable();
-            
             $table->timestamps();
         });
     }

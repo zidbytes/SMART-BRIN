@@ -1,5 +1,3 @@
-// "use client" // Tambahkan ini jika file ini berada di lingkungan Next.js App Router
-
 import React, { useState } from 'react';
 
 // Import custom components
@@ -19,7 +17,7 @@ import {
 // Menggunakan import aktual seperti yang diminta
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import patternBg from '../assets/bg-pattern3.png'; // Import background pattern
 
 // Helper function to convert research group names to abbreviations
@@ -77,80 +75,8 @@ function transformUniversityData(data: any[]): any[] {
     });
 }
 
-// Helper function to provide sample data if real data is empty
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function provideDataFallback(data: any[], type: string): any[] {
-    if (data && data.length > 0) {
-        return data;
-    }
-    
-    // Return appropriate default data based on type
-    switch (type) {
-        case 'pksJenis':
-            return [
-                { jenis: 'Dalam Negeri', count: 27 },
-                { jenis: 'Luar Negeri', count: 14 },
-            ];
-        case 'researchGroup':
-            return [
-                { name: 'Natural Language Processing', count: 3 },
-                { name: 'Information Retrieval', count: 2 },
-                { name: 'Knowledge and Data Engineering', count: 4 },
-                { name: 'Human Computer Interaction', count: 5 },
-                { name: 'Digital Government', count: 2 },
-            ];
-        case 'status':
-            return [
-                { jenis: 'Terdaftar', count: 5 },
-                { jenis: 'Granted', count: 3 },
-                { jenis: 'Dalam Proses', count: 8 },
-            ];
-        case 'university':
-            return [
-                { name: 'UI', count: 3 },
-                { name: 'ITB', count: 2 },
-                { name: 'UGM', count: 4 },
-                { name: 'NUS', count: 1 },
-                { name: 'TU Delft', count: 2 },
-            ];
-        case 'degree':
-            return [
-                { jenis: 'S3', count: 4 },
-                { jenis: 'S2', count: 7 },
-                { jenis: 'Post-Doc', count: 2 },
-            ];
-        case 'year':
-            return [
-                { name: 2022, count: 250000000 },
-                { name: 2023, count: 350000000 },
-                { name: 2024, count: 450000000 },
-                { name: 2025, count: 550000000 },
-            ];
-        case 'participation':
-            return [
-                { jenis: 'SDM PRSDI', count: 12 },
-                { jenis: 'Non-SDM PRSDI', count: 5 },
-            ];
-        case 'pdvrType':
-            return [
-                { name: 'Pelatihan', count: 8 },
-                { name: 'Seminar', count: 5 },
-                { name: 'Workshop', count: 3 },
-                { name: 'Conference', count: 4 },
-            ];
-        default:
-            return [
-                { name: 'Sample 1', count: 5 },
-                { name: 'Sample 2', count: 8 },
-                { name: 'Sample 3', count: 3 },
-                { name: 'Sample 4', count: 7 },
-            ];
-    }
-}
-
-
-
-// Shadcn UI Tabs components mockup (mempertahankan ini karena Anda membuatnya sendiri)
+// Shadcn UI Tabs components mockup
+// (keeping this as you created it yourself)
 interface TabsProps {
     defaultValue: string;
     className?: string;
@@ -231,6 +157,7 @@ const TabsContent = ({ value, activeTab, className, children }: TabsContentProps
 interface DataTableColumn {
     header: string;
     accessor: string;
+    render?: (value: string | number | boolean | null | undefined) => React.ReactNode;
 }
 
 interface DataTableProps {
@@ -315,7 +242,9 @@ const DataTable = ({ data = [], columns = [] }: DataTableProps) => {
                                 <tr key={rowIndex} className={`text-neutral-700 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-100`}>
                                     {actualColumns.map((col, colIndex) => (
                                         <td key={colIndex} className="px-4 py-2">
-                                            {String((row as Record<string, unknown>)[col.accessor] || '')}
+                                            {col.render 
+                                                ? col.render((row as Record<string, unknown>)[col.accessor] as string | number | boolean | null | undefined) 
+                                                : String((row as Record<string, unknown>)[col.accessor] || '')}
                                         </td>
                                     ))}
                                 </tr>
@@ -409,10 +338,16 @@ interface DashboardProps {
         kiByStatus: { jenis: string; count: number }[];
         danaEksternalByYear: { name: string|number; count: number }[];
         danaByResearchGroup: { name: string; count: number }[];
-        pksJenisData: { jenis: string; count: number }[];  // Data jenis kerjasama (dalam/luar negeri)
+        pksJenisData: { jenis: string; count: number }[];
         sdmByDegree: { jenis: string; count: number }[];
         sdmByUniversity: { name: string; count: number }[];
-        purwarupaByResearchGroup: { name: string; count: number }[];
+        
+        // Purwarupa data - from PHP controller: purwarupaByGroup
+        purwarupaByGroup?: { name: string; count: number }[];
+        
+        // For backward compatibility
+        purwarupaByResearchGroup?: { name: string; count: number }[];
+        
         purwarupaByStatus: { jenis: string; count: number }[];
         pdvrByType: { name: string; count: number }[];
         pdvrParticipation: { jenis: string; count: number }[];
@@ -426,6 +361,7 @@ interface DashboardProps {
             tahun: number;
             jenis: string;
             status: string;
+            user_id: number;
         }[];
         detailPublications: {
             id: number;
@@ -455,6 +391,24 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
     ];
+    
+    const { auth } = usePage<{ auth: { user: { role: string; id: number; name: string } } }>().props;
+    
+    // Check if user is a researcher and if there are publications with notes for this researcher
+    const isResearcher = auth?.user?.role === 'researcher';
+    
+    // Make sure we have the publicationsWithNotes array or provide a default
+    const publicationsWithNotes = tables.publicationsWithNotes || [];
+    
+    const userNotesCount = isResearcher ? 
+        publicationsWithNotes.filter(note => note.user_id === auth?.user?.id).length : 0;
+    
+    // Debug notifications
+    console.log("Auth data:", auth);
+    console.log("Is researcher:", isResearcher);
+    console.log("User ID:", auth?.user?.id);
+    console.log("User notes count:", userNotesCount);
+    console.log("Publications with notes length:", publicationsWithNotes.length);
 
     // Debug: Log data for debugging
     React.useEffect(() => {
@@ -463,7 +417,16 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
         console.log('Tables data:', tables);
         console.log('PublicationsWithNotes data:', tables.publicationsWithNotes);
         console.log('DirectPublicationData data:', tables.directPublicationData);
-    }, [target, tables]);
+        
+        // Debug for Purwarupa data
+        console.log('Raw Purwarupa Research Group data (purwarupaByGroup):', charts.purwarupaByGroup);
+        console.log('Raw Purwarupa Status data:', charts.purwarupaByStatus);
+        console.log('Actual backend data keys:', Object.keys(charts));
+        console.log('Is purwarupaByGroup empty?', !charts.purwarupaByGroup || charts.purwarupaByGroup.length === 0);
+    }, [target, tables, charts]);
+
+    // Set the year for data display consistently across all charts
+    const dataYear = 2024;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -472,9 +435,29 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                 className="flex h-full flex-1 flex-col gap-4 rounded-xl p-6 overflow-x-auto"
                 style={{
                     backgroundImage: `url(${patternBg})`,
-                    // backgroundColor: '#f3f4f6',
                 }}
             >
+                {/* Notification for researchers with catatan monev - only show if has notes */}
+                {isResearcher && userNotesCount > 0 && (
+                    <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded shadow">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-amber-700">
+                                    <strong>Perhatian!</strong> Anda memiliki {userNotesCount} dokumen dengan catatan dari tim Monev. 
+                                    <a href="/details" className="font-medium underline text-amber-700 hover:text-amber-600 ml-1">
+                                        Lihat detail
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="mb-4">
                     <h1 className="text-4xl font-extrabold text-[#E62F2A] mb-1">Dashboard Capaian PRSDI</h1>
@@ -503,18 +486,30 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                         }}
                     />
                     
-                    {/* Untuk Terindex Scopus */}
+                    {/* Perolehan Dana Eksternal */}
                     <KpiCard 
-                        title="Untuk Terindex Scopus"
-                        value={`${((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(2)}%`}
-                        trend={{
-                            value: 2.89,
-                            isPositive: true
-                        }}
-                        description="vs. previous month"
+                        title="Perolehan Dana Eksternal"
+                        value={charts.danaEksternalByYear ? 
+                            new Intl.NumberFormat('id-ID', { 
+                                style: 'currency', 
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            }).format(charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0)) : 'Rp0'
+                        }
+                        trend={target && target.dana_eksternal > 0 ? {
+                            value: (((charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) / target.dana_eksternal) * 100 - 100),
+                            isPositive: (charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) >= target.dana_eksternal
+                        } : undefined}
+                        description={target && target.dana_eksternal > 0 
+                            ? `Capaian: ${Math.round((charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) / target.dana_eksternal * 100)}% dari target`
+                            : 'Target belum ditetapkan'}
                         progress={{
-                            current: kpi.scopusIndexedCount,
-                            customWidth: `${((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(0)}%`
+                            current: charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0,
+                            target: target?.dana_eksternal,
+                            customWidth: target && target.dana_eksternal > 0 
+                                ? `${Math.min(100, ((charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) / target.dana_eksternal) * 100)}%` 
+                                : '0%'
                         }}
                     />
 
@@ -572,24 +567,29 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                             data={charts.publicationsTrend || []}
                             className="w-full min-h-[400px]" 
                             dropdown 
+                            dataYear={dataYear}
                         />
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
                             <ModifiedPieChartPlaceholder
                                 title="Jenis Publikasi"
                                 className="w-full min-h-[400px]"
                                 data={charts.publicationTypes || []}
+                                dataYear={dataYear}
+                                footerNote="Menampilkan distribusi publikasi berdasarkan jenis (jurnal, prosiding, dll)"
                             />
                             <BarChart 
                                 title="Scopus vs Non-Scopus" 
                                 data={charts.scopusData || []}
                                 className="w-full min-h-[400px] overflow-x-auto"
-                                layout="horizontal" 
+                                layout="horizontal"
+                                dataYear={dataYear}
+                                footerNote="Q1-Q4 menunjukkan quartile jurnal Scopus berdasarkan peringkat"
                             />
                             <ChartRadarStatus 
                                 data={charts.statusData || []} 
-                                className="w-full min-h-[400px]" 
-                            /> {/* Mengganti ModifiedPieChartPlaceholder dengan ChartRadarStatus */}
+                                className="w-full min-h-[400px]"
+                                dataYear={dataYear}
+                                footerNote="Status publikasi berdasarkan tahapan (submitted, accepted, published, dll)"/>
                         </div>
                     </TabsContent>
 
@@ -597,39 +597,39 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                     <TabsContent value="ki" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <BarChart 
-                                title="Jumlah KI per Kelompok Riset (Total: 37)" 
-                                data={transformResearchGroupData(provideDataFallback(charts.kiByResearchGroup || [], 'researchGroup'))}
-                                className="w-full min-h-[500px] overflow-x-auto" 
+                                title="Jumlah KI per Kelompok Riset" 
+                                data={transformResearchGroupData(charts.kiByResearchGroup || [])}
+                                className="w-full min-h-[500px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Distribusi kekayaan intelektual berdasarkan kelompok riset PRSDI"
                             />
-                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
                             <ModifiedPieChartPlaceholder 
                                 title="Status KI" 
                                 className="w-full min-h-[400px]" 
-                                data={provideDataFallback(charts.kiByStatus || [], 'status')}
+                                data={charts.kiByStatus || []}
+                                dataYear={dataYear}
+                                footerNote="Persentase KI berdasarkan status pendaftaran dan perolehan"
                             />
                         </div>
                     </TabsContent>
 
                     {/* Tab Content: Dana Eksternal */}
                     <TabsContent value="dana" activeTab={""} className="space-y-4">
-                        {/*                        <BarChart 
-                            title="Nilai Dana Eksternal per Tahun" 
-                            data={provideDataFallback(charts.danaEksternalByYear || [], 'year')}
-                            className="w-full min-h-[400px] mb-4 overflow-x-auto" 
-                            tickValues={[500000000, 1000000000, 1500000000, 2000000000, 2500000000, 3000000000]}
-                        />*/}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <BarChart 
                                 title="Dana Berdasarkan Kelompok Riset" 
-                                data={transformResearchGroupData(provideDataFallback(charts.danaByResearchGroup || [], 'researchGroup'))}
+                                data={transformResearchGroupData(charts.danaByResearchGroup || [])}
                                 className="w-full min-h-[400px] overflow-x-auto" 
                                 layout="horizontal"
+                                dataYear={dataYear}
                                 tickValues={[500000000, 1000000000, 1500000000, 2000000000, 2500000000, 3000000000]}
+                                footerNote="Nilai dana eksternal yang diperoleh masing-masing kelompok riset (dalam Rupiah)"
                             />
                             <ModifiedPieChartPlaceholder 
                                 title="Jenis Kerjasama" 
                                 className="w-full min-h-[400px]" 
-                                data={provideDataFallback(charts.pksJenisData || [], 'pksJenis')}
+                                data={charts.pksJenisData || []}
+                                footerNote="Distribusi dana berdasarkan jenis kerjasama (dalam/luar negeri)"
                             />
                         </div>
                     </TabsContent>
@@ -637,16 +637,18 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                     {/* Tab Content: SDM Studi */}
                     <TabsContent value="sdm" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
                             <ModifiedPieChartPlaceholder 
                                 title="Jenjang Studi SDM" 
                                 className="w-full min-h-[400px]" 
-                                data={provideDataFallback(charts.sdmByDegree || [], 'degree')}
+                                data={charts.sdmByDegree || []}
+                                footerNote="Persentase SDM berdasarkan jenjang studi yang ditempuh (S2/S3/Postdoc)"
                             />
                             <BarChart 
                                 title="Universitas Tujuan" 
-                                data={transformUniversityData(provideDataFallback(charts.sdmByUniversity || [], 'university'))}
-                                className="w-full min-h-[400px] overflow-x-auto" 
+                                data={transformUniversityData(charts.sdmByUniversity || [])}
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Jumlah SDM berdasarkan universitas tempat studi lanjut"
                             />
                         </div>
                     </TabsContent>
@@ -655,14 +657,19 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                     <TabsContent value="purwarupa" activeTab={""} className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <BarChart 
-                                title="Jumlah Purwarupa per Kelompok Riset" 
-                                data={transformResearchGroupData(provideDataFallback(charts.purwarupaByResearchGroup || [], 'researchGroup'))}
-                                className="w-full min-h-[400px] overflow-x-auto" 
+                                title={`Jumlah Purwarupa per Kelompok Riset`}
+                                data={transformResearchGroupData(
+                                    (charts.purwarupaByGroup || charts.purwarupaByResearchGroup || [])
+                                )}
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Distribusi jumlah purwarupa yang dihasilkan oleh tiap kelompok riset"
                             />
                             <ModifiedPieChartPlaceholder 
                                 title="Status Purwarupa" 
                                 className="w-full min-h-[400px]" 
-                                data={provideDataFallback(charts.purwarupaByStatus || [], 'status')}
+                                data={charts.purwarupaByStatus || []}
+                                footerNote="Persentase purwarupa berdasarkan status pengembangan"
                             />
                         </div>
                     </TabsContent>
@@ -672,17 +679,19 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <BarChart 
                                 title="Jumlah PDVR per Jenis" 
-                                data={provideDataFallback(charts.pdvrByType || [], 'pdvrType').map(item => ({
+                                data={(charts.pdvrByType || []).map(item => ({
                                     ...item,
-                                    displayName: item.name // Use display name for consistency
+                                    displayName: item.name
                                 }))}
-                                className="w-full min-h-[400px] overflow-x-auto" 
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Distribusi PDVR berdasarkan jenis kegiatan (postdoc/visiting/pelatihan)"
                             />
-                            {/* Menggunakan ModifiedPieChartPlaceholder untuk Shadcn-like behavior */}
                             <ModifiedPieChartPlaceholder 
                                 title="Keterlibatan SDM vs Non-SDM" 
                                 className="w-full min-h-[400px]" 
-                                data={provideDataFallback(charts.pdvrParticipation || [], 'participation')}
+                                data={charts.pdvrParticipation || []}
+                                footerNote="Perbandingan keterlibatan SDM PRSDI dan non-SDM PRSDI dalam PDVR"
                             />
                         </div>
                     </TabsContent>
@@ -691,15 +700,25 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                 {/* DataTable for Publikasi Detail - Using Shadcn Card and custom DataTable */}
                 <Card className="shadow-lg rounded-xl">
                     <CardContent className="p-4">
-                        <div className="font-bold mb-2 text-[#E62F2A]">Publikasi dengan Catatan Khusus</div>
+                        <div className="font-bold mb-2 text-[#E62F2A]">
+                            {isResearcher ? 'Publikasi Anda dengan Catatan Monev' : 'Publikasi dengan Catatan Monev'}
+                        </div>
                         {/* Adding console log in useEffect for debugging */}
                         <DataTable 
-                            data={tables.publicationsWithNotes || []} 
+                            data={isResearcher 
+                                ? publicationsWithNotes.filter(item => item.user_id === auth.user.id)
+                                : publicationsWithNotes} 
                             columns={[
                                 { header: 'No.', accessor: 'id' },
                                 { header: 'Periset', accessor: 'periset' },
                                 { header: 'Judul Publikasi', accessor: 'judul' },
-                                { header: 'Catatan', accessor: 'catatan' },
+                                { header: 'Catatan', accessor: 'catatan', 
+                                  render: (value) => (
+                                    <div className="max-w-md overflow-hidden text-ellipsis p-2 bg-amber-50 border-l-4 border-amber-500 rounded">
+                                      {String(value || '')}
+                                    </div>
+                                  )
+                                },
                                 { header: 'Tahun', accessor: 'tahun' },
                                 { header: 'Jenis', accessor: 'jenis', },
                                 { header: 'Status', accessor: 'status' },
@@ -734,5 +753,3 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
         </AppLayout>
     );
 }
-
-// ModifiedPieChartPlaceholder is now imported from components/charts/ModifiedPieChartPlaceholder

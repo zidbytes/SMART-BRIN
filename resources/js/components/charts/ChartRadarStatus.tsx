@@ -18,10 +18,11 @@ import {
 interface ChartRadarStatusProps {
     data: { category: string; count: number }[];
     className?: string;
+    footerNote?: string;
+    dataYear?: number;
 }
 
-function ChartRadarStatus({ data = [], className }: ChartRadarStatusProps) {
-    // Only use the data provided from the backend, no fallback to mock data
+function ChartRadarStatus({ data = [], className, footerNote, dataYear = 2024 }: ChartRadarStatusProps) {
     const chartData = React.useMemo(() => {
         return data || [];
     }, [data]);
@@ -35,24 +36,28 @@ function ChartRadarStatus({ data = [], className }: ChartRadarStatusProps) {
             }
         };
         
-        // Map specific colors to specific status categories
+        // Map specific colors to specific status categories using red and white theme
         const statusColorMap: Record<string, string> = {
-            "Submit": "var(--chart-1)",
-            "Accepted": "var(--chart-2)",
-            "Published": "var(--chart-3)",
-            "Review": "var(--chart-4)",
-            "Draft": "var(--chart-5)",
-            "Reject": "var(--chart-6)",
-            "Undefined": "#94A3B8", // Gray color for undefined status
+            "Submit": "#E62F2A",      // BRIN primary red
+            "Accepted": "#B91C1C",    // Dark red
+            "Published": "#DC2626",   // Medium red
+            "Review": "#EF4444",      // Red
+            "Draft": "#F87171",       // Light red
+            "Reject": "#991B1B",      // Very dark red
+            "Undefined": "#94A3B8",   // Gray color for undefined status
         };
         
         const staticColors = [
-            "var(--chart-1)",
-            "var(--chart-2)",
-            "var(--chart-3)",
-            "var(--chart-4)",
-            "var(--chart-5)",
-            "var(--chart-6)",
+            "#E62F2A",  // BRIN primary red
+            "#B91C1C",  // Dark red
+            "#DC2626",  // Medium red
+            "#EF4444",  // Red
+            "#F87171",  // Light red
+            "#FECACA",  // Very light red
+            "#991B1B",  // Very dark red
+            "#F04438",  // Red accent
+            "#F97066",  // Light red accent
+            "#FDA29B",  // Very light red accent
         ];
 
         // Add each category to the config with appropriate color
@@ -78,7 +83,7 @@ function ChartRadarStatus({ data = [], className }: ChartRadarStatusProps) {
             <CardHeader className="flex flex-row items-start space-y-0 pb-0">
                 <div className="grid gap-1">
                     <CardTitle className="text-lg font-semibold text-[#E62F2A]">Status Publikasi</CardTitle>
-                    <CardDescription>Distribusi Status Publikasi - {new Date().getFullYear()}</CardDescription>
+                    <CardDescription>Distribusi Status Publikasi - {dataYear}</CardDescription>
                 </div>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col items-center justify-center p-6 pt-0 pb-6">
@@ -100,18 +105,19 @@ function ChartRadarStatus({ data = [], className }: ChartRadarStatusProps) {
                                 dataKey="count"
                                 fill="#E62F2A"
                                 fillOpacity={0.7}
-                                stroke="#E62F2A"
+                                stroke="#B91C1C" 
                                 strokeWidth={2}
                                 dot={{
                                     r: 4,
                                     fillOpacity: 1,
                                     fill: "#E62F2A",
-                                    stroke: "#fff",
+                                    // stroke: "#FFFFFF",
+                                    strokeWidth: 2
                                 }}
                                 activeDot={{
                                     r: 6,
-                                    fill: "#E62F2A",
-                                    stroke: "#fff",
+                                    fill: "#B91C1C",
+                                    stroke: "#FFFFFF",
                                     strokeWidth: 2
                                 }}
                             />
@@ -128,26 +134,10 @@ function ChartRadarStatus({ data = [], className }: ChartRadarStatusProps) {
                 <div className="flex gap-2 items-center font-medium leading-none">
                     Total Publikasi: <span className="font-bold">{totalCount.toLocaleString()}</span>
                 </div>
-                {chartData && chartData.length > 0 && (
-                    <>
-                        <div className="text-gray-500 leading-none text-xs mt-1">
-                            <span className="font-medium">Status tertinggi:</span> {
-                                chartData.filter(item => item.count > 0)
-                                    .reduce((prev, current) => (prev.count > current.count) ? prev : current, 
-                                        { category: 'Tidak ada', count: 0 }).category
-                            } ({totalCount > 0 ? Math.round((chartData.reduce((prev, current) => 
-                                (prev.count > current.count) ? prev : current, 
-                                { category: 'Tidak ada', count: 0 }).count / totalCount) * 100) : 0}%)
-                        </div>
-                        <div className="text-gray-500 leading-none text-xs">
-                            <span className="font-medium">Status kosong:</span> {
-                                chartData.find(item => item.category === 'Undefined')?.count || 0
-                            } publikasi
-                        </div>
-                        <div className="text-gray-500 leading-none text-xs">
-                            <span className="font-medium">Keterangan:</span> Data berdasarkan kolom status di database tahun {new Date().getFullYear()}
-                        </div>
-                    </>
+                {footerNote && (
+                    <div className="text-gray-500 leading-none text-xs mt-1">
+                        <span className="font-medium">Keterangan:</span> {footerNote}
+                    </div>
                 )}
             </CardFooter>
         </Card>

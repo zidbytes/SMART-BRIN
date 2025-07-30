@@ -4,6 +4,23 @@ export type FieldTemplate = {
     type: 'text' | 'select' | 'date';
     options?: { value: string; label: string }[];
     placeholder?: string;
+    required?: boolean;
+    link?: {
+        text: string;
+        url: string;
+    };
+};
+
+const generateYearOptions = (startYear?: number, endYear?: number) => {
+    const currentYear = new Date().getFullYear();
+    const start = startYear || currentYear - 10;
+    const end = endYear || currentYear;
+
+    const years = [];
+    for (let year = end; year >= start; year--) {
+        years.push({ value: year.toString(), label: year.toString() });
+    }
+    return years;
 };
 
 export const fieldTemplates: Record<string, FieldTemplate[]> = {
@@ -11,21 +28,21 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
     // PUBLIKASI GLOBAL
     // ==============================================
     Publikasi: [
-        { label: 'Judul Publikasi Global', name: 'judul', type: 'text' },
-        {
-            label: 'Kelompok Riset',
-            name: 'kelompokRiset',
-            type: 'select',
-            options: [
-                { value: 'Information Retrieval', label: 'Information Retrieval' },
-                { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
-                { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
-                { value: 'Digital Government', label: 'Digital Government' },
-                { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-            ],
-        },
-        { label: 'Authors', name: 'authorsCivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
-        { label: 'Authors Non-PRSDI', name: 'authorsNonCivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
+        { label: 'Judul Publikasi Global', name: 'judul', type: 'text', required: true },
+        // {
+        //     label: 'Kelompok Riset',
+        //     name: 'kelompokRiset',
+        //     type: 'select',
+        //     options: [
+        //         { value: 'Information Retrieval', label: 'Information Retrieval' },
+        //         { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
+        //         { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
+        //         { value: 'Digital Government', label: 'Digital Government' },
+        //         { value: 'Natural Language Processing', label: 'Natural Language Processing' },
+        //     ],
+        // },
+        { label: 'Authors ', name: 'authorsCivitasPRSDI', type: 'text', placeholder: 'Contoh: Arief, S.Kom., M.Kom, Rizki Alfariz', required: true },
+        { label: 'Authors Non-PRSDI', name: 'authorsNonCivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
         {
             label: 'Jenis Dokumen Publikasi',
             name: 'jenis DokumenJurnalProsidingBagbook',
@@ -45,7 +62,13 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
                 { value: 'Accepted', label: 'Accepted' },
             ],
         },
-        { label: 'Nama Jurnal/Prosiding', name: 'namaJurnal/Prosiding', type: 'text' },
+        {
+            label: 'Nama Jurnal/Prosiding',
+            name: 'namaJurnal/Prosiding/BagBook',
+            type: 'text',
+            required: true,
+            placeholder: 'Contoh: "International Journal of Electrical and Computer Engineering"',
+        },
         {
             label: 'Terindeks Scopus',
             name: 'terindeksScopus',
@@ -67,28 +90,29 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
                 { value: 'Tidak', label: 'Tidak' },
             ],
         },
-        { label: 'Link Drive Publikasi', name: 'linkDrivePi', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
         { label: 'Link URL Dokumen', name: 'linkDokumen', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
-        { label: 'DOI', name: 'linkDOI', type: 'text' },
+        { label: 'DOI', name: 'linkDOI', type: 'text', placeholder: 'Contoh: "https://doi.org/11.1111/s11111-111-0111-1.1"' },
+        {
+            label: 'Sudah unggah dokumen Publikasi di drive?',
+            name: 'status_upload',
+            type: 'select',
+            required: true,
+            link: {
+                text: 'Upload di sini',
+                url: 'https://drive.google.com/drive/folders/publikasi',
+            },
+            options: [
+                { value: 'Sudah', label: 'Sudah' },
+                { value: 'Belum', label: 'Belum' },
+            ],
+        },
     ],
 
     // ==============================================
     // KEKAYAAN INTELEKTUAL (KI)
     // ==============================================
     KI: [
-        { label: 'Judul Inovasi/Karya', name: 'judulciptaan', type: 'text' },
-        {
-            label: 'Kelompok Riset',
-            name: 'kelompokRiset',
-            type: 'select',
-            options: [
-                { value: 'Information Retrieval', label: 'Information Retrieval' },
-                { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
-                { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
-                { value: 'Digital Government', label: 'Digital Government' },
-                { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-            ],
-        },
+        { label: 'Judul Inovasi/Karya', name: 'judulciptaan', type: 'text', required: true },
         {
             label: 'Status',
             name: 'Status',
@@ -98,8 +122,19 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
                 { value: 'Terdaftar DJKI', label: 'Terdaftar DJKI' },
             ],
         },
-        { label: 'Inventor', name: 'PenciptaDariPusatRisetSainsDataDanInformasi', type: 'text' },
-        { label: 'Inventor Non Sivitas PRSDI', name: 'PenciptaNonPusatRisetSainsDataDanInformasi', type: 'text' },
+        {
+            label: 'Inventor',
+            name: 'PenciptaDariPusatRisetSainsDataDanInformasi',
+            type: 'text',
+            placeholder: 'Contoh: Arief, S.Kom., M.Kom, Rizki Alfariz',
+            required: true,
+        },
+        {
+            label: 'Inventor Non Sivitas PRSDI',
+            name: 'PenciptaNonPusatRisetSainsDataDanInformasi',
+            type: 'text',
+            placeholder: 'Kosongkan jika tidak ada!',
+        },
         {
             label: 'Jenis Kekayaan Intelektual',
             name: 'JenisKekayaanIntelektual',
@@ -109,33 +144,33 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
                 { value: 'Paten', label: 'Paten' },
             ],
         },
-        { label: 'Nomor Pendaftaran', name: 'nomorPermohonan', type: 'text' },
-        { label: 'Tanggal Daftar', name: 'tanggalPermohonan', type: 'date' },
-        { label: 'Nomor Sertifikat', name: 'nomorPencatatan', type: 'text' },
-        { label: 'Tanggal Sertifikasi', name: 'tanggalSertifikasi', type: 'date', placeholder: 'Contoh: 1 Januari 2025 ' },
-        { label: 'Link Drive KI', name: 'linkDriveKi', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
+        { label: 'Nomor Pendaftaran', name: 'nomorPermohonan', type: 'text', required: true, placeholder: 'Contoh: "EC002024111111"' },
+        { label: 'Tanggal Sertifikasi', name: 'tanggalPenerimaan', type: 'date', required: true },
+        { label: 'Nomor Sertifikat', name: 'nomorPencatatan', type: 'text', placeholder: 'Jika hak paten, silahkan kosongkan!' },
         { label: 'Link Dokumen', name: 'linkDokumen', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
+        {
+            label: 'Sudah unggah dokumen Kekayaan Intelektual di drive?',
+            name: 'status_upload',
+            type: 'select',
+            required: true,
+            link: {
+                text: 'Upload di sini',
+                url: 'https://drive.google.com/drive/folders/kekayaan-intelektual',
+            },
+            options: [
+                { value: 'Sudah', label: 'Sudah' },
+                { value: 'Belum', label: 'Belum' },
+            ],
+        },
     ],
 
     // ==============================================
     // PERJANJIAN KERJASAMA (PKS) dan DANA EKSTERNAL
     // ==============================================
     PKS: [
-        { label: 'Judul', name: 'judul', type: 'text' },
-        {
-            label: 'Kelompok Riset',
-            name: 'kelompokRiset',
-            type: 'select',
-            options: [
-                { value: 'Information Retrieval', label: 'Information Retrieval' },
-                { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
-                { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
-                { value: 'Digital Government', label: 'Digital Government' },
-                { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-            ],
-        },
-        { label: 'PIC Kegiatan (Sivitas PRSDI)', name: 'PICKegiatanSivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
-        { label: 'PIC Kegiatan (Non Sivitas PRSDI)', name: 'PICKegiatanNonSivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
+        { label: 'Judul', name: 'judul', type: 'text', required: true },
+        { label: 'PIC Kegiatan (Sivitas PRSDI)', name: 'PICKegiatanSivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
+        { label: 'PIC Kegiatan (Non Sivitas PRSDI)', name: 'PICKegiatanNonSivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
         {
             label: 'Tipe',
             name: 'tipe',
@@ -167,53 +202,50 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
         },
         { label: 'Pihak K3', name: 'pihakK3', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
         { label: 'Nilai', name: 'nilai', type: 'text', placeholder: 'Contoh: 100.000.000, Jika tidak ada tuliskan: 0' },
-        { label: 'Keterangan', name: 'keterangan', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
-        { label: 'No Kerjasama', name: 'noKerjasama', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
-        { label: 'Tanggal Kerjasama', name: 'tglKerjasama', type: 'date' },
-        { label: 'No Perjanjian', name: 'noPerjanjian', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
-        { label: 'Link Upload', name: 'linkUpload', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
+        { label: 'Keterangan', name: 'keterangan', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
+        { label: 'No Kerjasama', name: 'noKerjasama', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
+        { label: 'Tanggal Kerjasama', name: 'tglKerjasama', type: 'date', required: true },
+        { label: 'No Perjanjian', name: 'noPerjanjian', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
+        { label: 'Link Upload', name: 'linkUpload', type: 'text', required: true, placeholder: 'Contoh: https://drive.google.com/' },
+        { label: 'Tanggal Perjanjian', name: 'tglPerjanjian', type: 'date' },
+        { label: 'Tahun PKS', name: 'tahunPKS', type: 'select', placeholder: 'Kosongkan jika tidak ada!', options: generateYearOptions(2015) },
+        { label: 'Link Data Pendukung', name: 'linkDataPendukung', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
         {
-            label: 'Status Upload',
-            name: 'status',
+            label: 'Sudah unggah dokumen PKS / Dana Eksternal di drive?',
+            name: 'status_upload',
             type: 'select',
+            required: true,
+            link: {
+                text: 'Upload di sini',
+                url: 'https://drive.google.com/drive/folders/pks-dana-eksternal',
+            },
             options: [
                 { value: 'Sudah', label: 'Sudah' },
                 { value: 'Belum', label: 'Belum' },
             ],
         },
-        { label: 'Tanggal Perjanjian', name: 'tglPerjanjian', type: 'date' },
-        { label: 'Tahun PKS', name: 'tahunPKS', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
-        { label: 'Link Data Pendukung', name: 'linkDataPendukung', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
     ],
 
     // ==============================================
     // PURWARUPA
     // ==============================================
     Purwarupa: [
-        { label: 'Judul Purwarupa', name: 'judulciptaan', type: 'text' },
+        { label: 'Judul Purwarupa', name: 'judulciptaan', type: 'text', required: true },
         {
-            label: 'Kelompok Riset',
-            name: 'kelompokRiset',
-            type: 'select',
-            options: [
-                { value: 'Information Retrieval', label: 'Information Retrieval' },
-                { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
-                { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
-                { value: 'Digital Government', label: 'Digital Government' },
-                { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-            ],
+            label: 'Inventor',
+            name: 'PenciptaDariPusatRisetSainsDataDanInformasi',
+            type: 'text',
+            placeholder: 'Contoh: Arief, S.Kom., M.Kom, Rizki Alfariz',
+            required: true,
         },
-        { label: 'Inventor', name: 'PenciptaDariPusatRisetSainsDataDanInformasi', type: 'text' },
-        { label: 'Inventor Non Sivitas PRSDI', name: 'PenciptaNonPusatRisetSainsDataDanInformasi', type: 'text' },
         {
-            label: 'Jenis Purwarupa',
-            name: 'jenisPurwarupa',
-            type: 'select',
-            options: [
-                { value: 'Software Prototype', label: 'Software Prototype' },
-                { value: 'Lainnya', label: 'Lainnya' },
-            ],
+            label: 'Inventor Non Sivitas PRSDI',
+            name: 'PenciptaNonPusatRisetSainsDataDanInformasi',
+            type: 'text',
+            placeholder: 'Kosongkan jika tidak ada!',
         },
+        { label: 'Jenis Purwarupa', name: 'jenisPurwarupa', type: 'text', required: true, placeholder: 'Contoh: "Program Komputer"' },
+        { label: 'Nama Mitra', name: 'namaMitra', type: 'text', required: true, placeholder: 'Contoh: Unit Hemodialisis RSUD Cimacan Cianjur ' },
         {
             label: 'Status',
             name: 'status',
@@ -223,27 +255,33 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
                 { value: 'Belum Sertifikasi', label: 'Belum Sertifikasi' },
             ],
         },
-        { label: 'Nama Mitra', name: 'namaMitra', type: 'text', placeholder: 'Contoh: Unit Hemodialisis RSUD Cimacan Cianjur ' },
-        { label: 'Link Drive PWRP', name: 'linkDrivePWRP', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
-        { label: 'Link Direct Evidence', name: 'linkDirectEvidence', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
+        { label: 'Link Data Pendukung', name: 'linkDataPendukung', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
+        {
+            label: 'Sudah unggah dokumen Purwarupa di drive?',
+            name: 'status_upload',
+            type: 'select',
+            required: true,
+            link: {
+                text: 'Upload di sini',
+                url: 'https://drive.google.com/drive/folders/purwarupa',
+            },
+            options: [
+                { value: 'Sudah', label: 'Sudah' },
+                { value: 'Belum', label: 'Belum' },
+            ],
+        },
     ],
 
     // ==============================================
     // Studi Lanjut Dalam dan Luar Negeri
     // ==============================================
     StudiLanjut: [
-        { label: 'Nama SDM Studi Lanjut', name: 'namaMahasiswaAtauPeserta', type: 'text' },
         {
-            label: 'Kelompok Riset',
-            name: 'kelompokRiset',
-            type: 'select',
-            options: [
-                { value: 'Information Retrieval', label: 'Information Retrieval' },
-                { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
-                { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
-                { value: 'Digital Government', label: 'Digital Government' },
-                { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-            ],
+            label: 'Nama SDM Studi Lanjut',
+            name: 'namaMahasiswaAtauPeserta',
+            type: 'text',
+            placeholder: 'Contoh: "Arief, S.Kom., M.Kom" / "Arief"',
+            required: true,
         },
         {
             label: 'Jenjang Pendidikan Ditempuh',
@@ -254,20 +292,31 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
                 { value: 'S3', label: 'S3' },
             ],
         },
-        { label: 'Nama Universitas', name: 'namaUniversitasPenerima', type: 'text' },
+        { label: 'Nama Universitas', name: 'namaUniversitasPenerima', type: 'text', required: true, placeholder: 'Contoh: "Universitas Indonesia"' },
+        { label: 'Status', name: 'status', type: 'text', required: true, placeholder: 'Contoh: "Tugas Belajar DBR/ongoing S2/ongoing S3"' },
         {
-            label: 'Status',
-            name: 'status',
+            label: 'Tahun Masuk',
+            name: 'tahunMasuk',
             type: 'select',
-            options: [
-                { value: 'Tugas Belajar DBR', label: 'Tugas Belajar DBR' },
-                { value: 'ongoing S2', label: 'ongoing S2' },
-            ],
+            required: true,
+            options: generateYearOptions(2015),
         },
         { label: 'Keterangan', name: 'keterangan', type: 'text', placeholder: 'Contoh: "Mulai Tugas Belajar bulan Agustus 2025"' },
         { label: 'Link Data Pendukung', name: 'linkDataPendukung', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
-        { label: 'Tahun Masuk', name: 'tahunMasuk', type: 'text' },
-        { label: 'Link Direct Evidence ', name: 'linkDirectEvidence', type: 'text', placeholder: 'Contoh: https://drive.google.com/pdf/..' },
+        {
+            label: 'Sudah unggah dokumen Studi Lanjut di drive?',
+            name: 'status_upload',
+            type: 'select',
+            required: true,
+            link: {
+                text: 'Upload di sini',
+                url: 'https://drive.google.com/drive/folders/studi-lanjut',
+            },
+            options: [
+                { value: 'Sudah', label: 'Sudah' },
+                { value: 'Belum', label: 'Belum' },
+            ],
+        },
     ],
 
     // ==============================================
@@ -276,18 +325,6 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
     PDVR: [
         { label: 'Nama SDM PRSDI', name: 'namaSdmPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
         { label: 'Nama Non SDM PRSDI', name: 'namaSdmNonPRSDI', type: 'text', placeholder: 'Jika kosong isi dengan: - ' },
-        {
-            label: 'Kelompok Riset',
-            name: 'kelompokRiset',
-            type: 'select',
-            options: [
-                { value: 'Information Retrieval', label: 'Information Retrieval' },
-                { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
-                { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
-                { value: 'Digital Government', label: 'Digital Government' },
-                { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-            ],
-        },
         {
             label: 'Status',
             name: 'status',
@@ -317,6 +354,19 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
             ],
         },
         { label: 'Link Data Pendukung', name: 'linkDataPendukung', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
-        { label: 'Link Direct Evidence ', name: 'linkDirectEvidence', type: 'text', placeholder: 'Contoh: https://drive.google.com/pdf/..' },
+        {
+            label: 'Sudah unggah dokumen PDVR di drive?',
+            name: 'status_upload',
+            type: 'select',
+            required: true,
+            link: {
+                text: 'Upload di sini',
+                url: 'https://drive.google.com/drive/folders/pdvr',
+            },
+            options: [
+                { value: 'Sudah', label: 'Sudah' },
+                { value: 'Belum', label: 'Belum' },
+            ],
+        },
     ],
 };
