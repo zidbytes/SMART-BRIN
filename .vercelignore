@@ -1,0 +1,46 @@
+# Dependencies
+/node_modules
+/vendor
+
+# Development files
+.env
+.env.example
+.env.local
+.env.testing
+
+# Testing
+/tests
+phpunit.xml
+
+# Documentation
+README.md
+*.md
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Laravel specific
+/storage/logs
+/storage/framework/cache
+/storage/framework/sessions
+/storage/framework/testing
+/storage/framework/views
+
+# Build artifacts that we want to include
+# /public/build
+# /bootstrap/ssr
+
+# Development tools
+.prettierrc
+.prettierignore
+eslint.config.js
+tailwind.config.js
+vite.config.ts
+tsconfig.json
