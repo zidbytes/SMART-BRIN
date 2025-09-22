@@ -1,19 +1,26 @@
 {
-  "version": 2,
-  "framework": null,
-  "builds": [
-    {
-      "src": "resources/js/app.tsx",
-      "use": "@vercel/node",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "compiler": "vite",
-        "project": "vite.config.ts"
-      }
-    }
-  ],
-  "routes": [
-    { "src": "/build/(.*)", "dest": "/public/build/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+    "version": 2,
+    "framework": null,
+    "builds": [
+        {
+            "src": "resources/js/app.tsx",
+            "use": "@vercel/node",
+            "config": {
+                "maxLambdaSize": "15mb",
+                "compiler": "vite",
+                "project": "vite.config.ts"
+            }
+        },
+        {
+            "src": "public/index.php",
+            "use": "vercel-php@0.6.0"
+        }
+    ],
+    "routes": [
+        { "src": "/build/(.*)", "dest": "/public/build/$1" },
+        {
+            "src": "/(.*)",
+            "dest": "/public/index.php"
+        }
+    ]
 }
