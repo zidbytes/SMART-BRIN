@@ -15,13 +15,15 @@ return new class extends Migration
             $t->id();
             $t->foreignId('document_id')
             ->constrained('documents')->onDelete('cascade');
-            $t->string('nama_sdm_iptek')->nullable();
-            $t->string('jenjang_pendidikan')->nullable();
-            $t->string('nama_universitas')->nullable();
+            $t->string('nama_sdm_iptek');
+            $t->string('kelompok_riset');
+            $t->string('jenjang_pendidikan');
+            $t->string('nama_universitas');
+            $t->string('status');
             $t->text('keterangan')->nullable();
+            $t->string('status_upload');
             $t->string('upload_dakung')->nullable();
-            $t->year('tahun_masuk')->nullable();
-            $t->string('direct_evidence')->nullable();
+            $t->year('tahun_masuk');
             $t->timestamps();
         });
     }

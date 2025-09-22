@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Notifications\CustomResetPasswordNotification; // Pastikan ini sudah di-import
 
 class User extends Authenticatable
 {
@@ -21,8 +22,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // Pastikan 'role' ada di fillable
-        'research_group', // Pastikan 'research_group' ada di fillable
+        'role',
+        'nip',
+        'jenis_kelamin',
+        'research_group', 
     ];
 
     /**
@@ -49,9 +52,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Kirim notifikasi reset password kustom.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomResetPasswordNotification($token));
+    }
+
+    
+    /**
      * Relasi ke Documents yang dibuat oleh user ini.
      */
-    public function documents(): HasMany // Tambahkan method ini
+
+        public function documents(): HasMany // Tambahkan method ini
     {
         return $this->hasMany(Document::class);
     }

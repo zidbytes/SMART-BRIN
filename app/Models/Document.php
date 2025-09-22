@@ -18,6 +18,7 @@ class Document extends Model
         'user_id',
         'document_type',
         'title',
+        'kelompok_riset',
         'status',
         'notes',
         'monev_stamp',
@@ -64,5 +65,10 @@ class Document extends Model
     public function furtherStudy(): HasOne
     {
         return $this->hasOne(DocumentLoaStudiLanjut::class);
+    }
+
+    public function prototype(): HasOne
+    {
+        return $this->hasOne(DocumentPurwarupa::class);
     }
 }

@@ -5,17 +5,18 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import { useSidebar } from './sidebar'; // Impor useSidebar dari sidebar utama
 
 export function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
-    const { state, isMobile, setOpenMobile, setOpen } = useSidebar(); // Dapatkan state dan setter dari context
+    // Get state and toggle function from the sidebar context
+    const { state, toggleSidebar } = useSidebar();
 
-    // Fix 1 & 2: Explicitly type 'event' as React.MouseEvent<HTMLButtonElement>
-    // Fix 1 & 2: Explicitly type 'prev' as boolean in state setter callbacks
+    // Handle click event to toggle sidebar state
     const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
-        if (isMobile) {
-            setOpenMobile((prev: boolean) => !prev);
-        } else {
-            setOpen((prev: boolean) => !prev);
+        // Use the toggleSidebar function from context which handles both mobile and desktop states
+        toggleSidebar();
+        
+        // Call the onClick handler from parent if provided
+        if (onClick) {
+            onClick(event);
         }
-        onClick?.(event); // Panggil onClick yang mungkin diberikan dari parent
     };
 
     // Tentukan ikon berdasarkan state sidebar

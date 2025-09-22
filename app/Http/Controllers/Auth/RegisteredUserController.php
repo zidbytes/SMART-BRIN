@@ -20,7 +20,18 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('auth/register');
+        $researchGroups = [
+            'Information Retrieval',
+            'Natural Language Processing',
+            'Knowledge and Data Engineering',
+            'Human Computer Interaction and Visualisation   ',
+            'Digital Government',
+            'Monev',
+        ];
+
+        return Inertia::render('auth/register', [
+            'researchGroups' => $researchGroups
+        ]);
     }
 
     /**
@@ -32,20 +43,27 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'nip' => 'required|numeric|unique:users,nip',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'research_group' => 'required|in:Information Retrieval,Natural Language Processing,Knowledge and Data Engineering,Human Computer Interaction and Visualisation,Digital Government,Monev',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'nip' => $request->nip,
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'research_group' => $request->research_group,
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('dashboard'));
     }
+
 }

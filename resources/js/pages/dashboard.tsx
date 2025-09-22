@@ -1,31 +1,82 @@
-import React, { useState } from 'react'; // Fix 1.1: Removed unused useEffect
-// Recharts and lucide-react are still imported, but their components will be replaced with placeholders for charts
-// This is done to prevent import errors in a standalone environment without a full module bundler setup.
-// If you integrate this into a project with npm/yarn, you can uncomment these and remove placeholders.
-// import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
-import { ChevronDown } from 'lucide-react'; // Using lucide-react for the dropdown icon
+import React, { useState, useEffect } from 'react';
 
-// Using actual imports as requested
+// Import custom components
+import KpiCard from '@/components/KpiCard';
+import PublicationLineChart from '@/components/charts/PublicationLineChart';
+import BarChart from '@/components/charts/BarChart';
+import ChartRadarStatus from '@/components/charts/ChartRadarStatus';
+import ModifiedPieChartPlaceholder from '@/components/charts/ModifiedPieChartPlaceholder';
+
+// Import komponen Shadcn UI yang sebenarnya
+// Pastikan path ini sesuai dengan struktur proyek Anda
+import {
+    Card,
+    CardContent,
+} from "@/components/ui/card";
+
+// Menggunakan import aktual seperti yang diminta
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import patternBg from '../assets/bg-pattern3.png'; // Import background pattern
 
-// Shadcn UI Card component mockup
-const Card = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <div className={`rounded-xl border bg-white ${className}`}>
-        {children}
-    </div>
-);
+// Helper function to convert research group names to abbreviations
+function abbreviateResearchGroup(fullName: string): string {
+    const mapping: { [key: string]: string } = {
+        'Natural Language Processing': 'NLP',
+        'Information Retrieval': 'IR',
+        'Knowledge and Data Engineering': 'KDE',
+        'Digital Government': 'DG',
+        'Human Computer Interaction': 'IMKV',
+        'Human Computer Interaction and Visualisation': 'IMKV',
+        // Add any additional mappings here
+    };
+    
+    return mapping[fullName] || fullName;
+}
 
-// Shadcn UI CardContent component mockup
-const CardContent = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-    <div className={`p-4 ${className}`}>
-        {children}
-    </div>
-);
+// Helper function to convert university names to abbreviations
+function abbreviateUniversityName(fullName: string): string {
+    const mapping: { [key: string]: string } = {
+        'Universitas Indonesia': 'UI',
+        'Institut Teknologi Bandung': 'ITB',
+        'Universitas Gadjah Mada': 'UGM',
+        'National University of Singapore': 'NUS',
+        'Technische Universiteit Delft': 'TU Delft',
+        'Seoul National University of Science and Technology': 'SeoulTech',
+        // Add any additional university mappings here
+    };
+    
+    return mapping[fullName] || fullName;
+}
+
+// Helper function to transform research group data to use abbreviations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformResearchGroupData(data: any[]): any[] {
+    return data.map(item => {
+        const abbreviated = abbreviateResearchGroup(String(item.name));
+        return {
+            ...item,
+            jenis: abbreviated, // Add jenis for ModifiedPieChartPlaceholder compatibility
+            displayName: abbreviated
+        };
+    });
+}
+
+// Helper function to transform university data to use abbreviations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformUniversityData(data: any[]): any[] {
+    return data.map(item => {
+        const abbreviated = abbreviateUniversityName(String(item.name));
+        return {
+            ...item,
+            displayName: abbreviated
+        };
+    });
+}
 
 // Shadcn UI Tabs components mockup
+// (keeping this as you created it yourself)
 interface TabsProps {
     defaultValue: string;
     className?: string;
@@ -37,14 +88,12 @@ const Tabs = ({ defaultValue, className, children }: TabsProps) => {
     return (
         <div className={className}>
             {React.Children.map(children, child => {
-                // Fix 3: Explicitly type child before cloning
                 if (React.isValidElement(child) && child.type === TabsList) {
                     return React.cloneElement(child as React.ReactElement<TabsListProps>, { activeTab, setActiveTab });
                 }
                 return child;
             })}
             {React.Children.map(children, child => {
-                // Fix 3: Explicitly type child before cloning
                 if (React.isValidElement(child) && child.type === TabsContent) {
                     return React.cloneElement(child as React.ReactElement<TabsContentProps>, { activeTab });
                 }
@@ -64,11 +113,10 @@ interface TabsListProps {
 const TabsList = ({ activeTab, setActiveTab, className, children }: TabsListProps) => (
     <div className={`flex p-1 rounded-xl shadow border bg-white ${className}`}>
         {React.Children.map(children, child =>
-            // Fix 3 & 4: Explicitly type child before cloning and access props
             (React.isValidElement(child) && child.type === TabsTrigger)
                 ? React.cloneElement(child as React.ReactElement<TabsTriggerProps>, {
-                    isActive: (child.props as TabsTriggerProps).value === activeTab, // Accessing child.props.value after type assertion
-                    onClick: () => setActiveTab((child.props as TabsTriggerProps).value) // Accessing child.props.value after type assertion
+                    isActive: (child.props as TabsTriggerProps).value === activeTab,
+                    onClick: () => setActiveTab((child.props as TabsTriggerProps).value)
                 })
                 : child
         )}
@@ -76,16 +124,14 @@ const TabsList = ({ activeTab, setActiveTab, className, children }: TabsListProp
 );
 
 interface TabsTriggerProps {
-    // Fix 1.2: Rename 'value' to '_value' to explicitly mark as unused if not directly consumed in component JSX
     value: string;
     className?: string;
     children: React.ReactNode;
-    // Fix 5: Make isActive and onClick optional as they are injected by the parent TabsList
     isActive?: boolean;
     onClick?: () => void;
 }
 
-const TabsTrigger = ({ value: _value, className, children, isActive, onClick }: TabsTriggerProps) => (
+const TabsTrigger = ({ className, children, isActive, onClick }: TabsTriggerProps) => (
     <button
         onClick={onClick}
         className={`px-4 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-[#E62F2A] text-white' : 'text-neutral-600 hover:bg-gray-100'} ${className}`}
@@ -107,200 +153,150 @@ const TabsContent = ({ value, activeTab, className, children }: TabsContentProps
     </div>
 );
 
-// Shadcn UI DropdownMenu components mockup
-interface DropdownMenuProps {
-    children: React.ReactNode;
-}
-
-const DropdownMenu = ({ children }: DropdownMenuProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-        <div className="relative">
-            {React.Children.map(children, child => {
-                // Fix 3: Explicitly type child before cloning
-                if (React.isValidElement(child) && child.type === DropdownMenuTrigger) {
-                    return React.cloneElement(child as React.ReactElement<DropdownMenuTriggerProps>, { onClick: () => setIsOpen(!isOpen) });
-                }
-                // Fix 3: Explicitly type child before cloning
-                if (React.isValidElement(child) && child.type === DropdownMenuContent) {
-                    return isOpen ? React.cloneElement(child as React.ReactElement<DropdownMenuContentProps>, { setIsOpen }) : null;
-                }
-                return child;
-            })}
-        </div>
-    );
-};
-
-interface DropdownMenuTriggerProps {
-    onClick?: () => void;
-    asChild?: boolean;
-    children: React.ReactNode;
-}
-
-const DropdownMenuTrigger = ({ onClick, asChild, children }: DropdownMenuTriggerProps) => {
-    if (asChild && React.isValidElement(children)) {
-        // Fix 3: Explicitly type children as React.ReactElement<any> to allow onClick to be spread
-        return React.cloneElement(children, { onClick: onClick });
-    }
-    return <button onClick={onClick} className="border rounded px-2 py-1 text-sm bg-white flex items-center gap-1">
-        {children} <ChevronDown size={16} />
-    </button>;
-};
-
-interface DropdownMenuContentProps {
-    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    children: React.ReactNode;
-}
-
-const DropdownMenuContent = ({ setIsOpen, children }: DropdownMenuContentProps) => (
-    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-        <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-            {React.Children.map(children, child =>
-                // Fix 3: Explicitly type child before cloning
-                (React.isValidElement(child) && child.type === DropdownMenuItem)
-                    ? React.cloneElement(child as React.ReactElement<DropdownMenuItemProps>, { onClick: () => setIsOpen(false) })
-                    : child
-            )}
-        </div>
-    </div>
-);
-
-interface DropdownMenuItemProps {
-    onClick?: () => void;
-    children: React.ReactNode;
-}
-
-const DropdownMenuItem = ({ onClick, children }: DropdownMenuItemProps) => (
-    <button
-        onClick={onClick}
-        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-        role="menuitem"
-    >
-        {children}
-    </button>
-);
-
-
-// Placeholder components for charts
-interface ChartPlaceholderProps {
-    title: string;
-    className?: string;
-    dropdown?: boolean;
-    dropdownCaption?: string;
-}
-
-const AreaChartPlaceholder = ({ title, className, dropdown = false, dropdownCaption = "Pilihan" }: ChartPlaceholderProps) => (
-    <Card className={`shadow-lg rounded-xl ${className}`}>
-        <CardContent className="p-4">
-            <div className="flex justify-between items-center mb-2">
-                <div className="font-bold text-lg text-[#E62F2A]">{title}</div>
-                {dropdown && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <button className="border rounded px-2 py-1 text-sm bg-white flex items-center gap-1">
-                                {dropdownCaption} <ChevronDown size={16} />
-                            </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent setIsOpen={() => { }}>
-                            <DropdownMenuItem onClick={() => { }}>Opsi 1</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { }}>Opsi 2</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
-            </div>
-            <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
-                <span>[Placeholder Area Chart]</span>
-            </div>
-        </CardContent>
-    </Card>
-);
-
-const PieChartPlaceholder = ({ title, className }: ChartPlaceholderProps) => {
-    return (
-        <Card className={`shadow-lg rounded-xl ${className}`}>
-            <CardContent className="p-4">
-                <div className="font-bold mb-2 text-[#E62F2A]">{title}</div>
-                <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
-                    <span>[Placeholder Pie Chart]</span>
-                </div>
-            </CardContent>
-        </Card>
-    );
-};
-
-const BarChartPlaceholder = ({ title, className }: ChartPlaceholderProps) => (
-    <Card className={`shadow-lg rounded-xl ${className}`}>
-        <CardContent className="p-4">
-            <div className="font-bold mb-2 text-[#E62F2A]">{title}</div>
-            <div className="flex items-center justify-center h-full bg-gray-50 rounded-md border border-dashed text-gray-400">
-                <span>[Placeholder Bar Chart]</span>
-            </div>
-        </CardContent>
-    </Card>
-);
-
-
 // Mock DataTable component
 interface DataTableColumn {
     header: string;
     accessor: string;
+    render?: (value: string | number | boolean | null | undefined) => React.ReactNode;
 }
 
 interface DataTableProps {
-    // Fix 1.3: Removed 'title' prop as it's not used within the component
-    // Fix 2: Changed 'any[]' to 'Record<string, any>[]' for better type specificity
-    data?: Record<string, any>[];
+    data?: Array<Record<string, unknown>>;
     columns?: DataTableColumn[];
 }
 
 const DataTable = ({ data = [], columns = [] }: DataTableProps) => {
-    // Default mock data if none provided
-    const defaultMockData = [
-        { id: 1, periset: 'Jane Cooper', judul: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.', catatan: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.', tahun: '2023', jenis: 'Jurnal', status: 'Scopus' },
-        { id: 2, periset: 'Floyd Miles', judul: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.', catatan: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.', tahun: '2024', jenis: 'Prosiding', status: 'Non-Scopus' },
-        { id: 3, periset: 'Ronald Richards', judul: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.', catatan: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.', tahun: '2023', jenis: 'Buku', status: 'Non-Scopus' },
-    ];
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
-    // Default mock columns if none provided
+    // No default mock data anymore
+    const defaultMockData: Array<Record<string, unknown>> = [];
+
+    // Default columns if none provided
     const defaultMockColumns: DataTableColumn[] = [
-        { header: 'No.', accessor: 'id' },
-        { header: 'Periset', accessor: 'periset' },
-        { header: 'Judul', accessor: 'judul' },
-        { header: 'Catatan', accessor: 'catatan' },
+        { header: 'ID', accessor: 'id' },
     ];
 
     const actualData = data.length > 0 ? data : defaultMockData;
     const actualColumns = columns.length > 0 ? columns : defaultMockColumns;
 
+    // Pagination calculations
+    const totalItems = actualData.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentData = actualData.slice(startIndex, endIndex);
+
+    const handlePageChange = (page: number) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    const renderPageNumbers = () => {
+        const pageNumbers = [];
+        const maxVisiblePages = 5;
+        
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(
+                <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={`px-3 py-1 rounded text-sm ${
+                        i === currentPage
+                            ? 'bg-[#E62F2A] text-white'
+                            : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                >
+                    {i}
+                </button>
+            );
+        }
+
+        return pageNumbers;
+    };
+
     return (
-        <div className="overflow-auto max-h-96 rounded-lg border">
-            <table className="min-w-full text-sm mb-2 border-collapse">
-                <thead>
-                    <tr className="text-left text-black bg-gray-100 border-b border-gray-200">
-                        {actualColumns.map((col, index) => (
-                            <th key={index} className="px-4 py-2 font-semibold">
-                                {col.header}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {actualData.map((row, rowIndex) => (
-                        <tr key={rowIndex} className={`text-neutral-700 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-100`}>
-                            {actualColumns.map((col, colIndex) => (
-                                <td key={colIndex} className="px-4 py-2">
-                                    {row[col.accessor]}
-                                </td>
+        <div>
+            <div className="overflow-auto max-h-96 rounded-lg border">
+                <table className="min-w-full text-sm mb-2 border-collapse">
+                    <thead>
+                        <tr className="text-left text-black bg-gray-100 border-b border-gray-200">
+                            {actualColumns.map((col, index) => (
+                                <th key={index} className="px-4 py-2 font-semibold">
+                                    {col.header}
+                                </th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {actualData.length > 0 ? (
+                            currentData.map((row, rowIndex) => (
+                                <tr key={rowIndex} className={`text-neutral-700 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-100`}>
+                                    {actualColumns.map((col, colIndex) => (
+                                        <td key={colIndex} className="px-4 py-2">
+                                            {col.render 
+                                                ? col.render((row as Record<string, unknown>)[col.accessor] as string | number | boolean | null | undefined) 
+                                                : String((row as Record<string, unknown>)[col.accessor] || '')}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={actualColumns.length} className="px-4 py-6 text-center text-gray-500">
+                                    Tidak ada data yang tersedia
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            
+            {/* Pagination Controls - Only show if we have data */}
+            {totalItems > 0 && (
+                <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
+                    <span>
+                        Showing data {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </span>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded text-sm ${
+                                currentPage === 1
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'bg-[#E62F2A] text-white hover:bg-[#c62828]'
+                            }`}
+                        >
+                            &lt; Prev
+                        </button>
+                        {renderPageNumbers()}
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded text-sm ${
+                                currentPage === totalPages
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'bg-[#E62F2A] text-white hover:bg-[#c62828]'
+                            }`}
+                        >
+                            Next &gt;
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
-};
+}
 
-// Function to get the current day and formatted date
 function getFormattedDate() {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const today = new Date();
@@ -320,22 +316,119 @@ interface DashboardProps {
         publicationAuthorsCount: number;
         activeResearchers: number;
     };
+    target: {
+        publikasi_ilmiah_global: number;
+        kekayaan_intelektual: number;
+        purwarupa: number;
+        kerjasama_internasional: number;
+        kerjasama_nasional: number;
+        dana_eksternal: number;
+        sdm_studi_lanjut: number;
+        postdoc_visiting: number;
+        pelatihan_internasional: number;
+    } | null;
     charts: {
         publicationsTrend: { name: string; total: number }[];
         publicationTypes: { jenis: string; count: number }[];
         scopusData: { name: string; count: number }[];
-        // Tambahkan tipe untuk data chart KI, Dana Eksternal, dll. jika sudah ada di controller
+        statusData: { category: string; count: number }[];
+        
+        // New chart data
+        kiByResearchGroup: { name: string; count: number }[];
+        kiByStatus: { jenis: string; count: number }[];
+        danaEksternalByYear: { name: string|number; count: number }[];
+        danaByResearchGroup: { name: string; count: number }[];
+        pksJenisData: { jenis: string; count: number }[];
+        sdmByDegree: { jenis: string; count: number }[];
+        sdmByUniversity: { name: string; count: number }[];
+        
+        // Purwarupa data - from PHP controller: purwarupaByGroup
+        purwarupaByGroup?: { name: string; count: number }[];
+        
+        // For backward compatibility
+        purwarupaByResearchGroup?: { name: string; count: number }[];
+        
+        purwarupaByStatus: { jenis: string; count: number }[];
+        pdvrByType: { name: string; count: number }[];
+        pdvrParticipation: { jenis: string; count: number }[];
     };
     tables: {
-        publicationsWithNotes: Record<string, any>[];
-        detailPublications: Record<string, any>[];
+        publicationsWithNotes: {
+            id: number;
+            periset: string;
+            judul: string;
+            catatan: string;
+            tahun: number;
+            jenis: string;
+            status: string;
+            user_id: number;
+        }[];
+        detailPublications: {
+            id: number;
+            periset: string;
+            judul_publikasi: string;
+            tahun: number;
+            jenis: string;
+            status: string;
+        }[];
+        directPublicationData: {
+            id: number;
+            periset: string;
+            judul_publikasi: string;
+            kelompok_riset: string;
+            jenis: string;
+            status: string;
+            nama_jurnal: string;
+            scopus_indexed: string;
+            reputasi: string;
+            doi: string;
+            tahun: string;
+        }[];
     };
 }
 
-export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) {
+export default function DashboardPRSDI({ kpi, target, charts, tables }: DashboardProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
     ];
+    
+    const { auth } = usePage<{ auth: { user: { role: string; id: number; name: string } } }>().props;
+    
+    // Check if user is a researcher and if there are publications with notes for this researcher
+    const isResearcher = auth?.user?.role === 'researcher';
+    
+    // Make sure we have the publicationsWithNotes array or provide a default
+    const publicationsWithNotes = tables.publicationsWithNotes || [];
+    
+    const userNotesCount = isResearcher ? 
+        publicationsWithNotes.filter(note => note.user_id === auth?.user?.id).length : 0;
+
+    // Set the year for data display consistently across all charts
+    const dataYear = 2024;
+
+    // Hitung total dana eksternal
+    const danaEksternalTotal = charts.danaEksternalByYear
+        ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0)
+        : 0;
+
+    // Deteksi ukuran layar (client only)
+    const [isSmallScreen, setIsSmallScreen] = useState(false);
+    useEffect(() => {
+        const checkScreen = () => setIsSmallScreen(window.innerWidth < 900); // ubah breakpoint ke 900px
+        checkScreen();
+        window.addEventListener('resize', checkScreen);
+        return () => window.removeEventListener('resize', checkScreen);
+    }, []);
+
+    // Fungsi utilitas untuk format dana singkat (hanya tampilkan singkat di semua device)
+    function formatDanaCompact(amount: number): string {
+        if (amount >= 1_000_000_000) {
+            return `Rp${(amount / 1_000_000_000).toFixed(2).replace(/\.00$/, '')} M`;
+        } else if (amount >= 1_000_000) {
+            return `Rp${(amount / 1_000_000).toFixed(2).replace(/\.00$/, '')} Jt`;
+        }
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -344,9 +437,28 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                 className="flex h-full flex-1 flex-col gap-4 rounded-xl p-6 overflow-x-auto"
                 style={{
                     backgroundImage: `url(${patternBg})`,
-                    backgroundColor: '#f3f4f6',
                 }}
             >
+                {/* Notification for researchers with catatan monev */}
+                {isResearcher && userNotesCount > 0 &&(
+                    <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded shadow">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">                                    <p className="text-sm text-amber-700">
+                                        <strong>Perhatian!</strong> Anda memiliki <strong>{userNotesCount}</strong> dokumen dengan catatan dari tim Monev. 
+                                        <a href="/details" className="font-medium underline text-amber-700 hover:text-amber-600 ml-1">
+                                            Lihat detail
+                                        </a>
+                                    </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="mb-4">
                     <h1 className="text-4xl font-extrabold text-[#E62F2A] mb-1">Dashboard Capaian PRSDI</h1>
@@ -355,60 +467,85 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
 
                 {/* KPI Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div className="rounded-xl border bg-white shadow-lg p-5 flex flex-col gap-3">
-                        <div className="font-bold text-lg text-[#E62F2A]">Total Publikasi</div>
-                        <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold text-neutral-700">{kpi.totalPublications.toLocaleString()}</span>
-                            {/* Persentase ini masih hardcoded, bisa dihitung dari backend juga */}
-                            <span className="text-green-600 text-sm font-medium">+2.89%</span>
-                        </div>
-                        <div className="text-gray-500 text-xs">vs. previous month</div>
-                        <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
-                            <div className="bg-[#E62F2A] h-1.5 rounded-full" style={{ width: '78%' }}></div> {/* ini juga bisa jadi data dinamis */}
-                        </div>
-                    </div>
-                    <div className="rounded-xl border bg-white shadow-lg p-5 flex flex-col gap-3">
-                        <div className="font-bold text-lg text-[#E62F2A]">Untuk Terindex Scopus</div>
-                        <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold text-neutral-700">
-                                {((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(2)}% {/* Hitung persentase */}
-                            </span>
-                            <span className="text-green-600 text-sm font-medium">+2.89%</span>
-                        </div>
-                        <div className="text-gray-500 text-xs">vs. previous month</div>
-                        <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
-                            <div className="bg-[#E62F2A] h-1.5 rounded-full" style={{ width: `${((kpi.scopusIndexedCount / kpi.totalPublications) * 100).toFixed(0)}%` }}></div>
-                        </div>
-                    </div>
-                    <div className="rounded-xl border bg-white shadow-lg p-5 flex flex-col gap-3">
-                        <div className="font-bold text-lg text-[#E62F2A]">Publikasi per Penulis</div>
-                        <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold text-neutral-700">{kpi.publicationAuthorsCount.toLocaleString()}</span>
-                            <span className="text-green-600 text-sm font-medium">+2.89%</span>
-                        </div>
-                        <div className="text-gray-500 text-xs">vs. previous month</div>
-                        <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
-                            <div className="bg-[#E62F2A] h-1.5 rounded-full" style={{ width: '78%' }}></div>
-                        </div>
-                    </div>
-                    <div className="rounded-xl border bg-white shadow-lg p-5 flex flex-col gap-3">
-                        <div className="font-bold text-lg text-[#E62F2A]">Jumlah Periset Aktif</div>
-                        <div className="flex items-end gap-2">
-                            <span className="text-3xl font-bold text-neutral-700">{kpi.activeResearchers.toLocaleString()}</span>
-                            <span className="text-green-600 text-sm font-medium">+2.89%</span>
-                        </div>
-                        <div className="text-gray-500 text-xs">vs. previous month</div>
-                        <div className="w-full h-1.5 rounded-full bg-gray-200 mt-2">
-                            <div className="bg-[#E62F2A] h-1.5 rounded-full" style={{ width: '78%' }}></div>
-                        </div>
-                    </div>
+                    {/* Total Publikasi */}
+                    <KpiCard 
+                        title="Total Publikasi"
+                        value={kpi.totalPublications}
+                        trend={target && target.publikasi_ilmiah_global > 0 ? {
+                            value: ((kpi.totalPublications / target.publikasi_ilmiah_global) * 100 - 100),
+                            isPositive: kpi.totalPublications >= target.publikasi_ilmiah_global
+                        } : undefined}
+                        description={target && target.publikasi_ilmiah_global > 0 
+                            ? `Capaian: ${kpi.totalPublications} / ${target.publikasi_ilmiah_global} publikasi`
+                            : `Capaian: ${kpi.totalPublications} publikasi (target belum ditetapkan)`}
+                        progress={{
+                            current: kpi.totalPublications,
+                            target: target?.publikasi_ilmiah_global,
+                            customWidth: target && target.publikasi_ilmiah_global > 0 
+                                ? `${Math.min(100, (kpi.totalPublications / target.publikasi_ilmiah_global) * 100)}%` 
+                                : '0%'
+                        }}
+                    />
+                    
+                    {/* Perolehan Dana Eksternal */}
+                    <KpiCard 
+                        title="Perolehan Dana Eksternal"
+                        value={formatDanaCompact(danaEksternalTotal)}
+                        trend={target && target.dana_eksternal > 0 ? {
+                            value: ((danaEksternalTotal / target.dana_eksternal) * 100 - 100),
+                            isPositive: danaEksternalTotal >= target.dana_eksternal
+                        } : undefined}
+                        description={target && target.dana_eksternal > 0 
+                            ? `Capaian: ${Math.round(danaEksternalTotal / target.dana_eksternal * 100)}% dari target (${formatDanaCompact(danaEksternalTotal)} / ${formatDanaCompact(target.dana_eksternal)})`
+                            : `Capaian: ${formatDanaCompact(danaEksternalTotal)} (target belum ditetapkan)`}
+                        progress={{
+                            current: danaEksternalTotal,
+                            target: target?.dana_eksternal,
+                            customWidth: target && target.dana_eksternal > 0 
+                                ? `${Math.min(100, (danaEksternalTotal / target.dana_eksternal) * 100)}%` 
+                                : '0%'
+                        }}
+                    />
+
+                    {/* Total KI */}
+                    <KpiCard 
+                        title="Total Kekayaan Intelektual"
+                        value={charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0}
+                        trend={target && target.kekayaan_intelektual > 0 ? {
+                            value: (((charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0) / target.kekayaan_intelektual) * 100 - 100),
+                            isPositive: (charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0) >= target.kekayaan_intelektual
+                        } : undefined}
+                        description={target && target.kekayaan_intelektual > 0 
+                            ? `Capaian: ${charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0} / ${target.kekayaan_intelektual} KI`
+                            : `Capaian: ${charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0} KI (target belum ditetapkan)`}
+                        progress={{
+                            current: charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0,
+                            target: target?.kekayaan_intelektual,
+                            customWidth: target && target.kekayaan_intelektual > 0 
+                                ? `${Math.min(100, ((charts.kiByStatus ? charts.kiByStatus.reduce((total, item) => total + item.count, 0) : 0) / target.kekayaan_intelektual) * 100)}%` 
+                                : '0%'
+                        }}
+                    />
+
+                    {/* Jumlah Periset Aktif */}
+                    <KpiCard 
+                        title="Jumlah Periset Aktif"
+                        value={kpi.activeResearchers}
+                        trend={{
+                            value: 2.89,
+                            isPositive: true
+                        }}
+                        description="vs. previous month"
+                        progress={{
+                            current: 78,
+                            customWidth: '78%'
+                        }}
+                    />
                 </div>
 
                 {/* Chart Tabs - Using Shadcn Tabs */}
                 <Tabs defaultValue="publikasi" className="w-full space-y-4">
-                    {/* Fix 5: Pass required props to TabsList */}
                     <TabsList activeTab={""} setActiveTab={() => { }} className="bg-white rounded-xl shadow border p-1 w-fit">
-                        {/* Fix 5: No longer need to pass isActive and onClick here directly, as they are now optional in TabsTriggerProps */}
                         <TabsTrigger value="publikasi" className="data-[state=active]:bg-[#E62F2A] data-[state=active]:text-white rounded-lg px-4 py-2">Publikasi</TabsTrigger>
                         <TabsTrigger value="ki" className="data-[state=active]:bg-[#E62F2A] data-[state=active]:text-white rounded-lg px-4 py-2">KI</TabsTrigger>
                         <TabsTrigger value="dana" className="data-[state=active]:bg-[#E62F2A] data-[state=active]:text-white rounded-lg px-4 py-2">Dana Eksternal</TabsTrigger>
@@ -419,45 +556,137 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
 
                     {/* Tab Content: Publikasi */}
                     <TabsContent value="publikasi" activeTab={""} className="space-y-4">
-                        <AreaChartPlaceholder title="Perkembangan Publikasi per Bulan" className="w-full h-64" dropdown />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <PieChartPlaceholder title="Jenis Publikasi" className="w-full h-72" />
-                            <BarChartPlaceholder title="Scopus vs Non-Scopus" className="w-full h-72" />
+                        <PublicationLineChart 
+                            title="Perkembangan Publikasi per Bulan" 
+                            data={charts.publicationsTrend || []}
+                            className="w-full min-h-[400px]" 
+                            dropdown 
+                            dataYear={dataYear}
+                        />
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <ModifiedPieChartPlaceholder
+                                title="Jenis Publikasi"
+                                className="w-full min-h-[400px]"
+                                data={charts.publicationTypes || []}
+                                dataYear={dataYear}
+                                footerNote="Menampilkan distribusi publikasi berdasarkan jenis (jurnal, prosiding, dll)"
+                            />
+                            <BarChart 
+                                title="Publikasi Scopus per Quartile" 
+                                data={charts.scopusData || []}
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                layout="horizontal"
+                                dataYear={dataYear}
+                                footerNote="Q1-Q4 menunjukkan quartile jurnal Scopus berdasarkan peringkat. Data diambil dari kolom 'reputasi'."
+                            />
+                            <ChartRadarStatus 
+                                data={charts.statusData || []} 
+                                className="w-full min-h-[400px]"
+                                dataYear={dataYear}
+                                footerNote="Status publikasi berdasarkan tahapan (submitted, accepted, published, dll)"/>
                         </div>
                     </TabsContent>
 
                     {/* Tab Content: KI */}
                     <TabsContent value="ki" activeTab={""} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <BarChartPlaceholder title="Jumlah KI per Kelompok Riset" className="w-full h-72" />
-                            <PieChartPlaceholder title="Status KI" className="w-full h-72" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <BarChart 
+                                title="Jumlah KI per Kelompok Riset" 
+                                data={transformResearchGroupData(charts.kiByResearchGroup || [])}
+                                className="w-full min-h-[500px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Distribusi kekayaan intelektual berdasarkan kelompok riset PRSDI"
+                            />
+                            <ModifiedPieChartPlaceholder 
+                                title="Status KI" 
+                                className="w-full min-h-[400px]" 
+                                data={charts.kiByStatus || []}
+                                dataYear={dataYear}
+                                footerNote="Persentase KI berdasarkan status pendaftaran dan perolehan"
+                            />
                         </div>
                     </TabsContent>
 
                     {/* Tab Content: Dana Eksternal */}
                     <TabsContent value="dana" activeTab={""} className="space-y-4">
-                        <BarChartPlaceholder title="Nilai Dana Eksternal per Tahun" className="w-full h-72 mb-4" />
-                        <BarChartPlaceholder title="Dana Berdasarkan Kelompok Riset" className="w-full h-72" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <BarChart 
+                                title="Dana Berdasarkan Kelompok Riset" 
+                                data={transformResearchGroupData(charts.danaByResearchGroup || [])}
+                                className="w-full min-h-[400px] overflow-x-auto" 
+                                layout="horizontal"
+                                dataYear={dataYear}
+                                tickValues={[500000000, 1000000000, 1500000000, 2000000000, 2500000000, 3000000000]}
+                                footerNote="Nilai dana eksternal yang diperoleh masing-masing kelompok riset (dalam Rupiah)"
+                            />
+                            <ModifiedPieChartPlaceholder 
+                                title="Jenis Kerjasama" 
+                                className="w-full min-h-[400px]" 
+                                data={charts.pksJenisData || []}
+                                footerNote="Distribusi dana berdasarkan jenis kerjasama (dalam/luar negeri)"
+                            />
+                        </div>
                     </TabsContent>
 
                     {/* Tab Content: SDM Studi */}
                     <TabsContent value="sdm" activeTab={""} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <PieChartPlaceholder title="Jenjang Studi SDM" className="w-full h-72" />
-                            <BarChartPlaceholder title="Universitas Tujuan" className="w-full h-72" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <ModifiedPieChartPlaceholder 
+                                title="Jenjang Studi SDM" 
+                                className="w-full min-h-[400px]" 
+                                data={charts.sdmByDegree || []}
+                                footerNote="Persentase SDM berdasarkan jenjang studi yang ditempuh (S2/S3/Postdoc)"
+                            />
+                            <BarChart 
+                                title="Universitas Tujuan" 
+                                data={transformUniversityData(charts.sdmByUniversity || [])}
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Jumlah SDM berdasarkan universitas tempat studi lanjut"
+                            />
                         </div>
                     </TabsContent>
 
                     {/* Tab Content: Purwarupa */}
                     <TabsContent value="purwarupa" activeTab={""} className="space-y-4">
-                        <BarChartPlaceholder title="Jumlah Purwarupa per Kelompok Riset" className="w-full h-72" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <BarChart 
+                                title={`Jumlah Purwarupa per Kelompok Riset`}
+                                data={transformResearchGroupData(
+                                    (charts.purwarupaByGroup || charts.purwarupaByResearchGroup || [])
+                                )}
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Distribusi jumlah purwarupa yang dihasilkan oleh tiap kelompok riset"
+                            />
+                            <ModifiedPieChartPlaceholder 
+                                title="Status Purwarupa" 
+                                className="w-full min-h-[400px]" 
+                                data={charts.purwarupaByStatus || []}
+                                footerNote="Persentase purwarupa berdasarkan status pengembangan"
+                            />
+                        </div>
                     </TabsContent>
 
                     {/* Tab Content: PDVR */}
                     <TabsContent value="pdvr" activeTab={""} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <BarChartPlaceholder title="Jumlah PDVR per Jenis" className="w-full h-72" />
-                            <PieChartPlaceholder title="Keterlibatan SDM vs Non-SDM" className="w-full h-72" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <BarChart 
+                                title="Jumlah PDVR per Jenis" 
+                                data={(charts.pdvrByType || []).map(item => ({
+                                    ...item,
+                                    displayName: item.name
+                                }))}
+                                className="w-full min-h-[400px] overflow-x-auto"
+                                dataYear={dataYear}
+                                footerNote="Distribusi PDVR berdasarkan jenis kegiatan (postdoc/visiting/pelatihan)"
+                            />
+                            <ModifiedPieChartPlaceholder 
+                                title="Keterlibatan SDM vs Non-SDM" 
+                                className="w-full min-h-[400px]" 
+                                data={charts.pdvrParticipation || []}
+                                footerNote="Perbandingan keterlibatan SDM PRSDI dan non-SDM PRSDI dalam PDVR"
+                            />
                         </div>
                     </TabsContent>
                 </Tabs>
@@ -465,65 +694,80 @@ export default function DashboardPRSDI({ kpi, charts, tables }: DashboardProps) 
                 {/* DataTable for Publikasi Detail - Using Shadcn Card and custom DataTable */}
                 <Card className="shadow-lg rounded-xl">
                     <CardContent className="p-4">
-                        <div className="font-bold mb-2 text-[#E62F2A]">Daftar Publikasi Dengan Catatan</div>
-                        <DataTable data={tables.publicationsWithNotes} columns={[
-                            { header: 'No.', accessor: 'id' },
-                            { header: 'Periset', accessor: 'periset' },
-                            { header: 'Judul', accessor: 'judul' },
-                            { header: 'Catatan', accessor: 'catatan' },
-                            { header: 'Tahun', accessor: 'tahun' },
-                            { header: 'Jenis', accessor: 'jenis' },
-                            { header: 'Status', accessor: 'status' },
-                        ]} />
-                        {/* Update pagination info based on actual data count, if available */}
-                        <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
-                            <span>Showing data 1 to {tables.publicationsWithNotes.length} of {kpi.totalPublications} entries</span>
-                            {/* ... (pagination buttons remain as mock or implement dynamic pagination logic) */}
-                            <div className="flex gap-2">
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">‹</button>
-                                <button className="px-2 py-1 rounded bg-red-500 text-white">1</button>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">2</button>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">3</button>
-                                <span className="px-2 py-1 text-gray-500">...</span>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">40</button>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">›</button>
-                            </div>
+                        <div className="font-bold mb-2 text-[#E62F2A]">
+                            {isResearcher ? 'Publikasi Anda dengan Catatan Monev' : 'Publikasi dengan Catatan Monev'}
                         </div>
+                        
+                        {/* Tampilkan pesan jika tidak ada data catatan */}
+                        {(!publicationsWithNotes || publicationsWithNotes.length === 0) && (
+                            <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                                Tidak ada publikasi dengan catatan monev saat ini.
+                            </div>
+                        )}
+                        
+                        {/* Tampilkan tabel hanya jika ada data */}
+                        {publicationsWithNotes && publicationsWithNotes.length > 0 && (
+                            <DataTable 
+                                data={isResearcher 
+                                    ? (publicationsWithNotes || []).filter(item => 
+                                        item?.user_id === auth.user.id && 
+                                        item?.catatan && 
+                                        item.catatan !== '-' && 
+                                        item.catatan.trim() !== '')
+                                    : (publicationsWithNotes || []).filter(item => 
+                                        item?.catatan && 
+                                        item.catatan !== '-' && 
+                                        item.catatan.trim() !== '')} 
+                                columns={[
+                                    { header: 'No.', accessor: 'id' },
+                                    { header: 'Periset', accessor: 'periset' },
+                                    { header: 'Judul Publikasi', accessor: 'judul' },
+                                    { header: 'Catatan', accessor: 'catatan', 
+                                      render: (value) => (
+                                        <div className="max-w-md overflow-hidden text-ellipsis p-2 bg-amber-50 border-l-4 border-amber-500 rounded">
+                                          {String(value || '')}
+                                        </div>
+                                      )
+                                    },
+                                    { header: 'Tahun', accessor: 'tahun' },
+                                    { header: 'Jenis', accessor: 'jenis' },
+                                    { header: 'Status', accessor: 'status' }
+                                ]}
+                            />
+                        )}
                     </CardContent>
                 </Card>
-
-                {/* Detail Publikasi Table - This uses the DataTable component you've defined,
-                    assuming it can render the complex table structure.
-                */}
+                
+                {/* Data Langsung dari document_publications */}
                 <Card className="shadow-lg rounded-xl mb-6">
                     <CardContent className="p-4">
-                        <div className="font-bold mb-2 text-[#E62F2A]">Detail Publikasi</div>
-                        <DataTable
-                            data={tables.detailPublications}
-                            columns={[ // Example columns for Detail Publikasi, customize as needed
-                                { header: 'No.', accessor: 'id' },
-                                { header: 'Periset', accessor: 'periset' },
-                                { header: 'Judul Publikasi', accessor: 'judul_publikasi' },
-                                { header: 'Tahun', accessor: 'tahun' },
-                                { header: 'Jenis Publikasi', accessor: 'jenis' },
-                                { header: 'Scopus/Non-Scopus', accessor: 'status' },
-                            ]}
-                        />
-                        {/* Update pagination info based on actual data count, if available */}
-                        <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
-                            <span>Showing data 1 to {tables.detailPublications.length} of {kpi.totalPublications} entries</span>
-                            {/* ... (pagination buttons remain as mock or implement dynamic pagination logic) */}
-                            <div className="flex gap-2">
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">‹</button>
-                                <button className="px-2 py-1 rounded bg-red-500 text-white">1</button>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">2</button>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">3</button>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">4</button>
-                                <span className="px-2 py-1 text-gray-500">...</span>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">40</button>
-                                <button className="px-2 py-1 rounded text-gray-500 hover:bg-gray-100">›</button>
+                        <div className="font-bold mb-2 text-[#E62F2A]">Daftar Publikasi Terbaru</div>
+                        
+                        {/* Tampilkan pesan jika tidak ada data publikasi */}
+                        {(!tables.directPublicationData || tables.directPublicationData.length === 0) && (
+                            <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                                Tidak ada data publikasi terbaru saat ini.
                             </div>
-                        </div>
+                        )}
+                        
+                        {/* Tampilkan tabel hanya jika ada data */}
+                        {tables.directPublicationData && tables.directPublicationData.length > 0 && (
+                            <DataTable
+                                data={tables.directPublicationData || []}
+                                columns={[
+                                    { header: 'No.', accessor: 'id' },
+                                    { header: 'Periset', accessor: 'periset' },
+                                    { header: 'Judul Publikasi', accessor: 'judul_publikasi' },
+                                    { header: 'Kelompok Riset', accessor: 'kelompok_riset' },
+                                    { header: 'Jenis', accessor: 'jenis' },
+                                    { header: 'Status', accessor: 'status' },
+                                    { header: 'Jurnal', accessor: 'nama_jurnal' },
+                                    { header: 'Scopus', accessor: 'scopus_indexed' },
+                                    { header: 'Reputasi', accessor: 'reputasi' },
+                                    { header: 'Tahun', accessor: 'tahun' }
+                                ]}
+                            />
+                        )}
                     </CardContent>
                 </Card>
 

@@ -67,10 +67,17 @@ export default function Landingpage() {
                         </p>
 
                         <div className="font-poppins flex flex-col gap-4 pt-14 font-bold sm:flex-row">
-                            <Link href={route('login')} className=" inset-shadow-xs rounded-md border bg-[#ffffff] px-5 py-3 text-center text-[#E62F2A] shadow-xl">
+                            <Link
+                                href={route('login')}
+                                className="rounded-md border bg-[#ffffff] px-5 py-3 text-center text-[#E62F2A] shadow-xl inset-shadow-xs"
+                            >
                                 Get Started
                             </Link>
-                            <a href="#" className="inset-shadow-xs rounded-md border bg-[#E62F2A] px-5 py-3 text-center text-[#ffffff] shadow-xl">
+                            <a
+                                href="https://www.youtube.com/watch?v=3qPGlEb5Gaw"
+                                target="_blank"
+                                className="rounded-md border bg-[#E62F2A] px-5 py-3 text-center text-[#ffffff] shadow-xl inset-shadow-xs"
+                            >
                                 View Demo Video
                             </a>
                         </div>

@@ -10,24 +10,32 @@ class DocumentPublication extends Model
 {
     use HasFactory;
 
+    protected $table = 'document_publications';
+
     protected $fillable = [
-        'document_id', 
-        'periode_input', 
-        'judul_publikasi', 
-        'authors',
-        'jenis', 
-        'status', 
-        'nama_jurnal', 
-        'scopus_indexed', 
+        'document_id',
+        'judul_publikasi',
+        'kelompok_riset',
+        'authors1',
+        'authors2',
+        'authors3',
+        'authors4',
+        'authors5',
+        'authors6',
+        'authors7',
+        'nonprsdi_authors',
+        'jenis',
+        'status',
+        'status_upload',    
+        'nama_jurnal',
+        'scopus_indexed',
         'reputasi',
-        'file_drive_link', 
-        'url', 
+        'url',
         'doi',
     ];
 
     protected $casts = [
-        'authors' => 'array', 
-        'scopus_indexed' => 'boolean', 
+        'scopus_indexed' => 'boolean',
     ];
 
     public function document(): BelongsTo

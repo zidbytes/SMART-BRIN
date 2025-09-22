@@ -4,12 +4,16 @@ import Autoplay from 'embla-carousel-autoplay';
 import * as React from 'react';
 import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
 
-const images = ['https://placehold.co/600x400?text=Demo+1', 'https://placehold.co/600x400?text=Demo+2', 'https://placehold.co/600x400?text=Demo+3'];
+import demo1 from '../../assets/demo/demo1.svg';
+import demo2 from '../../assets/demo/demo2.svg';
+import demo3 from '../../assets/demo/demo3.svg';
+
+const images = [demo1, demo2, demo3];
 
 export function Demo() {
     const plugin = React.useRef(
         Autoplay({
-            delay: 2000,
+            delay: 2500,
             stopOnInteraction: true,
         }),
     );
@@ -24,9 +28,11 @@ export function Demo() {
             className="w-full max-w-lg"
         >
             <CarouselContent>
-                {images.map((src, index) => (
+                {images.map((imageSrc, index) => (
                     <CarouselItem key={index}>
-                        <img src={src} alt={`Demo ${index + 1}`} className="w-full rounded shadow-lg" />
+                        <div className="p-1">
+                            <img src={imageSrc} alt={`Demo ${index + 1}`} className="w-full rounded-lg" />
+                        </div>
                     </CarouselItem>
                 ))}
             </CarouselContent>
