@@ -10,25 +10,10 @@
         "compiler": "vite",
         "project": "vite.config.ts"
       }
-    },
-    {
-      "src": "public/index.php",
-      "use": "vercel-php@0.6.0"
     }
   ],
   "routes": [
-    {
-      "src": "/build/(.*)",
-      "dest": "/public/build/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/index.php"
-    }
-  ],
-  "build": {
-    "env": {
-      "NODE_VERSION": "20"
-    }
-  }
+    { "src": "/build/(.*)", "dest": "/public/build/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
