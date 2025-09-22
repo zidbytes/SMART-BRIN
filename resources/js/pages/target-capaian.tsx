@@ -45,10 +45,18 @@ const indikatorList = [
 ];
 
 export default function TargetCapaian({ targets, success, auth }: Props) {
+    // Ensure targets is always an array
+    const targetData = Array.isArray(targets) ? targets : [];
+    // Konversi semua tahun ke angka untuk memastikan perbandingan yang konsisten
+    const targetsYears = targetData.map(t => Number(t.tahun));
+    
     // Get the most recent year from targets or use current year as fallback
-    const mostRecentYear = targets.length > 0 
-        ? Math.max(...targets.map(t => t.tahun)) 
+    const mostRecentYear = targetData.length > 0 
+        ? Math.max(...targetsYears) 
         : new Date().getFullYear();
+    
+    console.log("Available targets:", targetData);
+    console.log("Most recent year:", mostRecentYear);
     
     const [filterYear, setFilterYear] = useState(mostRecentYear);
     const [isEditPopupVisible, setEditPopupVisible] = useState(false);
@@ -78,20 +86,32 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
             return;
         }
         
-        const targetToEdit = targets.find(t => t.tahun === filterYear);
+        // Convert form values to numbers for submission
+        const numericFormData = Object.fromEntries(
+            Object.entries(editForm).map(([key, value]) => [key, Number(value)])
+        );
+        
+        // Ensure we're comparing numbers correctly
+        const targetToEdit = targetData.find(t => Number(t.tahun) === Number(editTahun));
+        console.log("Target to edit:", targetToEdit);
+        console.log("Edit data:", { tahun: editTahun, ...numericFormData });
+        
         setIsSubmitting(true);
         
         if (targetToEdit) {
             // Update existing target
             router.put(`/target-tahunan/update/${targetToEdit.id}`, 
-                { tahun: editTahun, ...editForm },
+                { tahun: editTahun, ...numericFormData },
                 {
                     onSuccess: () => {
                         setIsSubmitting(false);
                         setEditPopupVisible(false);
+                        // Force page refresh to get latest data
+                        router.reload();
                     },
-                    onError: () => {
+                    onError: (errors) => {
                         setIsSubmitting(false);
+                        console.error("Update error:", errors);
                         alert('Gagal menyimpan data. Silakan coba lagi.');
                     }
                 }
@@ -99,14 +119,17 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
         } else {
             // Create new target
             router.post(`/target-tahunan`, 
-                { tahun: editTahun, ...editForm },
+                { tahun: editTahun, ...numericFormData },
                 {
                     onSuccess: () => {
                         setIsSubmitting(false);
                         setEditPopupVisible(false);
+                        // Force page refresh to get latest data
+                        router.reload();
                     },
-                    onError: () => {
+                    onError: (errors) => {
                         setIsSubmitting(false);
+                        console.error("Create error:", errors);
                         alert('Gagal menyimpan data. Silakan coba lagi.');
                     }
                 }
@@ -134,14 +157,23 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                 value={filterYear}
                                 onChange={(e) => setFilterYear(Number(e.target.value))}
                             >
-                                {targets.length > 0 
-                                    ? Array.from(new Set(targets.map(t => t.tahun))).sort((a, b) => b - a).map(year => (
-                                        <option key={year} value={year}>{year}</option>
-                                      ))
+                                {/* Tampilkan semua tahun yang ada di data target, diurutkan dari terbaru */}
+                                {targetData.length > 0 
+                                    ? Array.from(new Set(targetData.map(t => Number(t.tahun))))
+                                        .sort((a, b) => b - a)
+                                        .map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))
                                     : [new Date().getFullYear()].map(year => (
                                         <option key={year} value={year}>{year}</option>
-                                      ))
+                                    ))
                                 }
+                                {/* Tambahkan tahun saat ini jika belum ada dalam daftar */}
+                                {!targetData.some(t => Number(t.tahun) === new Date().getFullYear()) && (
+                                    <option key={new Date().getFullYear()} value={new Date().getFullYear()}>
+                                        {new Date().getFullYear()}
+                                    </option>
+                                )}
                             </select>
                         </div>
                     </div>
@@ -184,7 +216,9 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                         'KI', 'Publikasi', 'Purwarupa', 'Kerjasama', 'Kerjasama', 'Rp', 'Orang', 'Orang', 'Pelatihan'
                                     ];
                                     // Ensure both are treated as numbers for comparison
-                                    const targetTahun = targets.find(t => Number(t.tahun) === Number(filterYear));
+                                    
+                                    // Define the targetTahun variable by finding the target that matches the selected filter year
+                                    const targetTahun = targetData.find(t => Number(t.tahun) === Number(filterYear));
 
                                     const keyList = [
                                         'kekayaan_intelektual',
@@ -224,7 +258,8 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                 type="button"
                                 className="bg-[#E62F2A] text-white px-6 py-2 rounded-lg hover:bg-red-600 transition shadow-lg hover:shadow-xl"
                                 onClick={() => {
-                                    const latestTarget = targets.find(t => t.tahun === filterYear);
+                                    const latestTarget = targetData.find(t => Number(t.tahun) === Number(filterYear));
+                                    console.log("Button click - target found:", latestTarget);
                                     if (latestTarget) {
                                         // Edit existing target
                                         setEditTahun(latestTarget.tahun);
@@ -248,7 +283,7 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                                     setEditPopupVisible(true);
                                 }}
                             >
-                                {targets.find(t => t.tahun === filterYear) ? 'Ubah Target' : 'Tambah Target'}
+                                {targetData.find(t => Number(t.tahun) === Number(filterYear)) ? 'Ubah Target' : 'Tambah Target'}
                             </button>
                         </div>
                     )}
@@ -259,7 +294,7 @@ export default function TargetCapaian({ targets, success, auth }: Props) {
                             <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto transparent-scrollbar">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-2xl font-bold text-[#E62F2A]">
-                                        {targets.find(t => t.tahun === filterYear) ? 'Ubah Target Tahunan' : 'Tambah Target Tahunan'}
+                                        {targetData.find(t => Number(t.tahun) === Number(filterYear)) ? 'Ubah Target Tahunan' : 'Tambah Target Tahunan'}
                                     </h2>
                                     <button
                                         type="button"

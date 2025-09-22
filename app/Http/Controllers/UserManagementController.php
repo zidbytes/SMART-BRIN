@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,9 +31,18 @@ class UserManagementController extends Controller
 
         $validated = $this->validateRole($request);
 
-        $user->update(['role' => $validated['role']]);
+        DB::beginTransaction();
+        try {
+            $user->update(['role' => $validated['role']]);
+            DB::commit();
 
-        return back()->with('success', 'Role berhasil diperbarui.');
+            return back()->with('success', 'Role berhasil diperbarui.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withErrors([
+                'error' => 'Gagal memperbarui role pengguna.'
+            ]);
+        }
     }
 
     public function destroy(User $user)
@@ -45,9 +55,18 @@ class UserManagementController extends Controller
             ]);
         }
 
-        $user->delete();
+        DB::beginTransaction();
+        try {
+            $user->delete();
+            DB::commit();
 
-        return back()->with('success', 'User berhasil dihapus.');
+            return back()->with('success', 'User berhasil dihapus.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withErrors([
+                'error' => 'Gagal menghapus user.'
+            ]);
+        }
     }
 
     private function authorizeHeadOnly(): void

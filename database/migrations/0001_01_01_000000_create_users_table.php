@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('nip');
+            $table->enum('jenis_kelamin',['Laki-laki', 'Perempuan']);
             $table->enum('role', ['researcher', 'monev', 'head'])->default('researcher');
             $table->string('research_group')->nullable();
             $table->rememberToken();

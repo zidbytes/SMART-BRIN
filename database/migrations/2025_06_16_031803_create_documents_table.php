@@ -17,7 +17,7 @@
                 $table->string('document_type')->index();
                 $table->string('title');
                 $table->string('kelompok_riset')->index();
-                $table->enum('status', ['submitted', 'revised', 'approved', 'rejected'])->default('submitted')->index();
+                $table->enum('status', ['submitted', 'pending', 'reviewed', 'revised', 'approved', 'rejected'])->default('submitted')->index();
                 $table->text('notes')->nullable();
                 $table->timestamp('monev_stamp')->nullable();
                 $table->timestamps();

@@ -116,6 +116,19 @@ export function DocumentUpdateDialog({ open, onClose, onSubmit, documentData, do
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
+                        
+                        // Validasi form data (tambahkan validasi jika perlu)
+                        const requiredFields = fieldTemplates[docType]
+                            .filter(field => field.required)
+                            .map(field => field.name);
+                        
+                        const missingFields = requiredFields.filter(field => !formData[field]);
+                        
+                        if (missingFields.length > 0) {
+                            alert(`Mohon lengkapi kolom berikut: ${missingFields.join(', ')}`);
+                            return;
+                        }
+                        
                         onSubmit(formData);
                     }}
                 >

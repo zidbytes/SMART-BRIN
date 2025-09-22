@@ -27,7 +27,7 @@ class DocumentPelatihanLuarNegeri extends Model
         'jenis',
         'keterangan',
         'upload_dakung',
-        'direct_link',
+        'status_upload',
     ];
 
     /**

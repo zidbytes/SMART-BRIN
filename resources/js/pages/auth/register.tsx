@@ -18,6 +18,8 @@ type RegisterForm = {
     password: string;
     password_confirmation: string;
     research_group: string;
+    nip: string;
+    jenis_kelamin: string;
 };
 
 type Props = {
@@ -31,6 +33,8 @@ export default function Register({ researchGroups }: Props) {
         password: '',
         password_confirmation: '',
         research_group: '',
+        nip: '',
+        jenis_kelamin: '',
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -129,6 +133,40 @@ export default function Register({ researchGroups }: Props) {
                                 </div>
                             </div>
                             <InputError message={errors.research_group} className="mt-1" />
+                        </div>
+
+                        {/* Input NIP */}
+                        <div>
+                            <Label htmlFor="nip" className="text-gray-700">NIP</Label>
+                            <Input
+                                id="nip"
+                                type="number"
+                                required
+                                value={data.nip}
+                                onChange={(e) => setData('nip', e.target.value)}
+                                disabled={processing}
+                                placeholder="Nomor Induk Pegawai"
+                                className="mt-1 h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 text-base transition-colors focus:border-[#E62F2A] focus:bg-white focus:ring-1 focus:ring-[#E62F2A]"
+                            />
+                            <InputError message={errors.nip} className="mt-1" />
+                        </div>
+
+                        {/* Input Jenis Kelamin */}
+                        <div>
+                            <Label htmlFor="jenis_kelamin" className="text-gray-700">Jenis Kelamin</Label>
+                            <select
+                                id="jenis_kelamin"
+                                value={data.jenis_kelamin}
+                                onChange={(e) => setData('jenis_kelamin', e.target.value)}
+                                required
+                                disabled={processing}
+                                className="mt-1 h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 text-base text-gray-700 transition-colors focus:border-[#E62F2A] focus:bg-white focus:ring-1 focus:ring-[#E62F2A]"
+                            >
+                                <option value="">-- Pilih Jenis Kelamin --</option>
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
+                            <InputError message={errors.jenis_kelamin} className="mt-1" />
                         </div>
 
                         {/* Input Password */}

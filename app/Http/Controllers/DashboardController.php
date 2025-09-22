@@ -21,137 +21,162 @@ class DashboardController extends Controller
 {
     public function index(): Response
     {
-        // Debug auth and notes
-        $user = \Illuminate\Support\Facades\Auth::user();
-        \Illuminate\Support\Facades\Log::info('Current user', ['user' => $user ? [
-            'id' => $user->id, 
-            'name' => $user->name, 
-            'role' => $user->role
-        ] : 'No user']);
-        
-        $totalPublications     = Document::where('document_type', 'publication')->count();
-        $scopusIndexedCount    = DocumentPublication::where('scopus_indexed', true)->count();
-        $nonScopusCount        = DocumentPublication::where('scopus_indexed', false)->count();
-        $activeResearchers     = Document::distinct('user_id')->count('user_id');
+        DB::beginTransaction();
 
-        $authorFields = ['authors1', 'authors2', 'authors3', 'authors4', 'authors5', 'authors6','authors7'];
-        $totalAuthors = DocumentPublication::selectRaw(
-            implode(' + ', array_map(fn($col) => "COUNT($col)", $authorFields)) . ' as total_authors'
-        )->value('total_authors') ?? 0;
+        try {
+            $totalPublications     = Document::where('document_type', 'publication')->count();
+            $scopusIndexedCount    = DocumentPublication::where('scopus_indexed', true)->count();
+            $nonScopusCount        = DocumentPublication::where('scopus_indexed', false)->count();
+            $activeResearchers     = Document::distinct('user_id')->count('user_id');
 
-        $publicationsTrend = Document::where('document_type', 'publication')
-            ->selectRaw('MONTH(created_at) as month, COUNT(*) as total')
-            ->groupByRaw('MONTH(created_at)')
-            ->orderByRaw('MONTH(created_at)')
-            ->get()
-            ->map(fn($row) => [
-                'name'  => date("F", mktime(0, 0, 0, $row->month, 1)),
-                'total' => $row->total
+            $authorFields = ['authors1', 'authors2', 'authors3', 'authors4', 'authors5', 'authors6','authors7'];
+            $totalAuthors = DocumentPublication::selectRaw(
+                implode(' + ', array_map(fn($col) => "COUNT($col)", $authorFields)) . ' as total_authors'
+            )->value('total_authors') ?? 0;
+
+            $publicationsTrend = Document::where('document_type', 'publication')
+                ->selectRaw('MONTH(created_at) as month, COUNT(*) as total')
+                ->groupByRaw('MONTH(created_at)')
+                ->orderByRaw('MONTH(created_at)')
+                ->get()
+                ->map(fn($row) => [
+                    'name'  => date("F", mktime(0, 0, 0, $row->month, 1)),
+                    'total' => $row->total
+                ]);
+
+            $publicationTypes = $this->groupCount(DocumentPublication::class, 'jenis');
+            $scopusData       = $this->buildScopusQuartileChart($scopusIndexedCount, $nonScopusCount);
+            $statusData       = $this->buildStatusRadarChart();
+            $kiByResearchGroup= $this->groupCount(DocumentKekayaanIntelektual::class, 'kelompok_riset');
+            $kiByStatus       = $this->groupCount(DocumentKekayaanIntelektual::class, 'status', 'jenis');
+            $danaEksternalByYear = $this->sumByYear(DocumentPks::class, 'nilai');
+
+            $expectedTotal = 5461296388;
+            $danaByResearchGroup = DocumentPks::join('documents', 'document_pks.document_id', '=', 'documents.id')
+                ->select('documents.kelompok_riset', DB::raw('SUM(nilai) as total_value'))
+                ->groupBy('documents.kelompok_riset')->get();
+
+            $currentTotal = $danaByResearchGroup->sum('total_value');
+            $scaleFactor  = $currentTotal > 0 ? $expectedTotal / $currentTotal : 1;
+
+            $danaByResearchGroup = $danaByResearchGroup->map(fn($item) => [
+                'name'  => $item->kelompok_riset ?: 'Tidak Diketahui',
+                'count' => round($item->total_value * $scaleFactor, 2)
             ]);
 
-        $publicationTypes = $this->groupCount(DocumentPublication::class, 'jenis');
+            $sdmByDegree      = $this->groupCount(DocumentLoaStudiLanjut::class, 'jenjang_pendidikan', 'jenis');
+            $sdmByUniversity  = $this->groupCount(DocumentLoaStudiLanjut::class, 'nama_universitas');
+            $purwarupaByGroup = $this->groupCount(DocumentPurwarupa::class, 'kelompok_riset');
+            $purwarupaByStatus= $this->groupCount(DocumentPurwarupa::class, 'status', 'jenis');
+            $pksJenisData     = $this->groupCount(DocumentPks::class, 'jenis');
 
-        $scopusData = $this->buildScopusQuartileChart($scopusIndexedCount, $nonScopusCount);
-        $statusData = $this->buildStatusRadarChart();
+            $pdvrByType = $this->groupCount(DocumentPelatihanLuarNegeri::class, 'jenis');
+            $pdvrParticipation = [
+                ['jenis' => 'SDM PRSDI',     'count' => DocumentPelatihanLuarNegeri::whereNotNull('nama_sdm_prsdi')->count()],
+                ['jenis' => 'Non-SDM PRSDI', 'count' => DocumentPelatihanLuarNegeri::whereNotNull('non_sdm_prsdi')->count()],
+            ];
 
-        $kiByResearchGroup = $this->groupCount(DocumentKekayaanIntelektual::class, 'kelompok_riset');
-        $kiByStatus        = $this->groupCount(DocumentKekayaanIntelektual::class, 'status', 'jenis');
+            $publicationsWithNotes = $this->getPublicationsWithNotesDirectly();
+            $detailPublications    = $this->getDetailedPublications();
+            $directPublicationData = $this->getDirectPublicationData();
 
-        $danaEksternalByYear = $this->sumByYear(DocumentPks::class, 'nilai');
+            $year   = date('Y');
+            $target = TargetTahunan::where('tahun', $year)->first() ?? TargetTahunan::latest('tahun')->first();
 
-        $expectedTotal = 5461296388;
-        $danaByResearchGroup = DocumentPks::join('documents', 'document_pks.document_id', '=', 'documents.id')
-            ->select('documents.kelompok_riset', DB::raw('SUM(nilai) as total_value'))
-            ->groupBy('documents.kelompok_riset')->get();
+            DB::commit();
 
-        $currentTotal = $danaByResearchGroup->sum('total_value');
-        $scaleFactor  = $currentTotal > 0 ? $expectedTotal / $currentTotal : 1;
-
-        $danaByResearchGroup = $danaByResearchGroup->map(fn($item) => [
-            'name'  => $item->kelompok_riset ?: 'Tidak Diketahui',
-            'count' => round($item->total_value * $scaleFactor, 2)
-        ]);
-
-        $sdmByDegree      = $this->groupCount(DocumentLoaStudiLanjut::class, 'jenjang_pendidikan', 'jenis');
-        $sdmByUniversity  = $this->groupCount(DocumentLoaStudiLanjut::class, 'nama_universitas');
-        $purwarupaByGroup = $this->groupCount(DocumentPurwarupa::class, 'kelompok_riset');
-        $purwarupaByStatus= $this->groupCount(DocumentPurwarupa::class, 'status', 'jenis');
-
-        $pksJenisData = $this->groupCount(DocumentPks::class, 'jenis');
-
-        $pdvrByType = $this->groupCount(DocumentPelatihanLuarNegeri::class, 'jenis');
-        $pdvrParticipation = [
-            ['jenis' => 'SDM PRSDI',     'count' => DocumentPelatihanLuarNegeri::whereNotNull('nama_sdm_prsdi')->count()],
-            ['jenis' => 'Non-SDM PRSDI', 'count' => DocumentPelatihanLuarNegeri::whereNotNull('non_sdm_prsdi')->count()],
-        ];
-
-        $publicationsWithNotes = $this->getPublicationsWithNotesDirectly();
-        $detailPublications   = $this->getDetailedPublications();
-        $directPublicationData= $this->getDirectPublicationData();
-        
-        // Debug publication notes
-        \Illuminate\Support\Facades\Log::info('Publications with notes count', ['count' => count($publicationsWithNotes)]);
-        \Illuminate\Support\Facades\Log::info('Sample publication notes', [
-            'notes' => $publicationsWithNotes->take(2)->toArray()
-        ]);
-
-        $year   = date('Y');
-        $target = TargetTahunan::where('tahun', $year)->first() ?? TargetTahunan::latest('tahun')->first();
-
-        // Debug before rendering
-        \Illuminate\Support\Facades\Log::info('Before rendering dashboard', [
-            'publicationsWithNotes' => count($publicationsWithNotes),
-            'detailPublications' => count($detailPublications),
-            'directPublicationData' => count($directPublicationData),
-        ]);
-        
-        return Inertia::render('dashboard', [
-            'kpi' => [
-                'totalPublications'     => $totalPublications,
-                'scopusIndexedCount'    => $scopusIndexedCount,
-                'publicationAuthorsCount'=> $totalAuthors,
-                'activeResearchers'     => $activeResearchers
-            ],
-            'target' => $target,
-            'charts' => compact(
-                'publicationsTrend', 'publicationTypes', 'scopusData', 'statusData',
-                'kiByResearchGroup', 'kiByStatus', 'danaEksternalByYear', 'danaByResearchGroup', 'pksJenisData',
-                'sdmByDegree', 'sdmByUniversity', 'purwarupaByGroup', 'purwarupaByStatus',
-                'pdvrByType', 'pdvrParticipation'
-            ),
-            'tables' => compact('publicationsWithNotes', 'detailPublications', 'directPublicationData')
-        ]);
+            return Inertia::render('dashboard', [
+                'kpi' => [
+                    'totalPublications'      => $totalPublications,
+                    'scopusIndexedCount'     => $scopusIndexedCount,
+                    'publicationAuthorsCount'=> $totalAuthors,
+                    'activeResearchers'      => $activeResearchers
+                ],
+                'target' => $target,
+                'charts' => compact(
+                    'publicationsTrend', 'publicationTypes', 'scopusData', 'statusData',
+                    'kiByResearchGroup', 'kiByStatus', 'danaEksternalByYear', 'danaByResearchGroup', 'pksJenisData',
+                    'sdmByDegree', 'sdmByUniversity', 'purwarupaByGroup', 'purwarupaByStatus',
+                    'pdvrByType', 'pdvrParticipation'
+                ),
+                'tables' => compact('publicationsWithNotes', 'detailPublications', 'directPublicationData')
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return Inertia::render('dashboard-error', [
+                'message' => 'Gagal mengambil data dashboard.',
+                'error'   => $e->getMessage(),
+            ]);
+        }
     }
 
     private function buildScopusQuartileChart(int $scopus, int $nonScopus): array
-    {
-        // Ambil data quartile yang sebenarnya dari database
-        $q1Count = DocumentPublication::where('reputasi', 'Q1')->count();
-        $q2Count = DocumentPublication::where('reputasi', 'Q2')->count();
-        $q3Count = DocumentPublication::where('reputasi', 'Q3')->count();
-        $q4Count = DocumentPublication::where('reputasi', 'Q4')->count();
+    {       
+        // Ambil data quartile sebenarnya dari database dengan menangani berbagai format penulisan Q1-Q4
+        $q1Count = DocumentPublication::where('scopus_indexed', true)
+            ->where(function($query) {
+                $query->where('reputasi', 'Q1')
+                      ->orWhere('reputasi', 'q1')
+                      ->orWhere('reputasi', 'like', '%q1%')
+                      ->orWhere('reputasi', 'like', '%quartile 1%')
+                      ->orWhere('reputasi', 'like', '%quartil 1%');
+            })
+            ->count();
+            
+        $q2Count = DocumentPublication::where('scopus_indexed', true)
+            ->where(function($query) {
+                $query->where('reputasi', 'Q2')
+                      ->orWhere('reputasi', 'q2')
+                      ->orWhere('reputasi', 'like', '%q2%')
+                      ->orWhere('reputasi', 'like', '%quartile 2%')
+                      ->orWhere('reputasi', 'like', '%quartil 2%');
+            })
+            ->count();
+            
+        $q3Count = DocumentPublication::where('scopus_indexed', true)
+            ->where(function($query) {
+                $query->where('reputasi', 'Q3')
+                      ->orWhere('reputasi', 'q3')
+                      ->orWhere('reputasi', 'like', '%q3%')
+                      ->orWhere('reputasi', 'like', '%quartile 3%')
+                      ->orWhere('reputasi', 'like', '%quartil 3%');
+            })
+            ->count();
+            
+        $q4Count = DocumentPublication::where('scopus_indexed', true)
+            ->where(function($query) {
+                $query->where('reputasi', 'Q4')
+                      ->orWhere('reputasi', 'q4')
+                      ->orWhere('reputasi', 'like', '%q4%')
+                      ->orWhere('reputasi', 'like', '%quartile 4%')
+                      ->orWhere('reputasi', 'like', '%quartil 4%');
+            })
+            ->count();
         
-        // Hitung ulang total Scopus berdasarkan quartile aktual
-        $actualScopusTotal = $q1Count + $q2Count + $q3Count + $q4Count;
+        // Hitung publikasi Scopus yang tidak ada data reputasi (undefined quartile)
+        $undefinedQuartile = $scopus - ($q1Count + $q2Count + $q3Count + $q4Count);
         
-        // Log perbedaan untuk debugging
-        \Illuminate\Support\Facades\Log::info('Scopus Data Comparison', [
-            'estimated_total' => $scopus,
-            'actual_total' => $actualScopusTotal,
-            'q1' => $q1Count,
-            'q2' => $q2Count,
-            'q3' => $q3Count,
-            'q4' => $q4Count,
-            'non_scopus' => $nonScopus
-        ]);
+        // Jika ada Scopus tanpa quartile yang jelas, buat kategori terpisah
+        $undefinedQuartileLabel = $undefinedQuartile > 0 ? 'Unclassified Scopus' : 'Unclassified';
 
-        return [
-            ['name' => 'Q1', 'count' => $q1Count],
-            ['name' => 'Q2', 'count' => $q2Count],
-            ['name' => 'Q3', 'count' => $q3Count],
-            ['name' => 'Q4', 'count' => $q4Count],
-            ['name' => 'Non-Scopus', 'count' => $nonScopus],
-        ];
+        // Susun hasil agar chart menampilkan urutan yang logis
+        $result = [];
+        
+        // Prioritaskan Q1-Q4 dengan urutan benar
+        if ($q1Count > 0) $result[] = ['name' => 'Q1', 'count' => $q1Count];
+        if ($q2Count > 0) $result[] = ['name' => 'Q2', 'count' => $q2Count];
+        if ($q3Count > 0) $result[] = ['name' => 'Q3', 'count' => $q3Count];
+        if ($q4Count > 0) $result[] = ['name' => 'Q4', 'count' => $q4Count];
+        
+        // Tambahkan kategori unclassified jika ada
+        if ($undefinedQuartile > 0) {
+            $result[] = ['name' => 'Unclassified Scopus', 'count' => $undefinedQuartile];
+        }
+        
+        // Tambahkan non-scopus (selalu ada di akhir)
+        $result[] = ['name' => 'Non-Scopus', 'count' => $nonScopus];
+        
+        return $result;
     }
 
     private function buildStatusRadarChart(): array
@@ -238,25 +263,7 @@ class DashboardController extends Controller
 
     private function getPublicationsWithNotesDirectly()
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
-
-        // Debug
-        \Illuminate\Support\Facades\Log::info('Getting publications with notes', [
-            'user_id' => $user ? $user->id : 'no user',
-            'role' => $user ? $user->role : 'no role'
-        ]);
-        
-        // Count notes in database first for debugging
-        $notesCount = Document::whereNotNull('notes')->where('notes', '!=', '')->count();
-        \Illuminate\Support\Facades\Log::info('Total documents with notes in database', ['count' => $notesCount]);
-
-        // If no real notes in database, return empty collection
-        if ($notesCount === 0 && $user && $user->role === 'researcher') {
-            \Illuminate\Support\Facades\Log::info('No notes in database, returning empty collection');
-            return collect([]);
-        }
-
-        $query = DocumentPublication::join('documents', 'document_publications.document_id', '=', 'documents.id')
+        return DocumentPublication::join('documents', 'document_publications.document_id', '=', 'documents.id')
             ->join('users', 'documents.user_id', '=', 'users.id')
             ->select(
                 'document_publications.id',
@@ -266,41 +273,27 @@ class DashboardController extends Controller
                 'document_publications.status',
                 'document_publications.scopus_indexed',
                 'users.name as periset',
-                'users.id as user_id',
+                'documents.user_id', // Tambahkan user_id untuk filtering di frontend
                 DB::raw('YEAR(documents.created_at) as tahun')
             )
             ->whereNotNull('documents.notes')
-            ->where('documents.notes', '!=', '');
-        
-        // If the user is a researcher, only show their own notes
-        if ($user && $user->role === 'researcher') {
-            $query->where('documents.user_id', $user->id);
-            \Illuminate\Support\Facades\Log::info('Filtering by user_id', ['user_id' => $user->id]);
-        }
-        
-        $results = $query->latest('documents.created_at')->limit(10)->get();
-        
-        // Debug results
-        \Illuminate\Support\Facades\Log::info('Query results count', ['count' => $results->count()]);
-        
-        // Return empty result if no data found
-        if ($results->isEmpty() && $user && $user->role === 'researcher') {
-            \Illuminate\Support\Facades\Log::info('No results from query but user is researcher, returning empty collection');
-            return collect([]);
-        }
-        
-        return $results->map(function ($i) {
-            $status = $i->status ?: ($i->scopus_indexed ? 'Scopus' : 'Non-Scopus');
-            return [
-                'id'       => $i->id,
-                'judul'    => $i->judul,
-                'catatan'  => $i->catatan,
-                'jenis'    => $i->jenis,
-                'status'   => $status,
-                'periset'  => $i->periset,
-                'user_id'  => $i->user_id,
-                'tahun'    => $i->tahun,
-            ];
-        });
+            ->where('documents.notes', '!=', '')
+            ->where('documents.notes', '!=', '-')  // Juga filter tanda '-'
+            ->latest('documents.created_at')
+            ->limit(20) // Tambah jumlah untuk memastikan ada data
+            ->get()
+            ->map(function ($i) {
+                $status = $i->status ?: ($i->scopus_indexed ? 'Scopus' : 'Non-Scopus');
+                return [
+                    'id'       => $i->id,
+                    'judul'    => $i->judul,
+                    'catatan'  => $i->catatan,
+                    'jenis'    => $i->jenis,
+                    'status'   => $status,
+                    'periset'  => $i->periset,
+                    'user_id'  => $i->user_id, // Tambahkan user_id ke data yang dikembalikan
+                    'tahun'    => $i->tahun,
+                ];
+            });
     }
 }

@@ -1,9 +1,10 @@
-/* resources/js/pages/ReportCapaian.tsx */
+/* resources/js/pages/report-capaian.tsx */
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { BarChart3, FileSpreadsheetIcon, FilterIcon, TrendingUpIcon, TrendingDownIcon, FileTextIcon, FileIcon } from 'lucide-react';
+import { FileSpreadsheetIcon, FilterIcon, TrendingUpIcon, TrendingDownIcon, FileTextIcon, FileIcon } from 'lucide-react';
 import patternBg from '../assets/bg-pattern3.png'; // Import background pattern
+import type { BreadcrumbItem } from '@/types';
 
   /* ---------- tipe props dari Inertia ---------- */
   interface Props {
@@ -90,14 +91,18 @@ import patternBg from '../assets/bg-pattern3.png'; // Import background pattern
     };
 
     /* ------------- UI ------------- */
+    // Definisikan breadcrumbs untuk AppLayout
+    const breadcrumbs: BreadcrumbItem[] = [
+      { title: 'Laporan Capaian', href: '/report-capaian' }
+    ];
+
     return (
-      <AppLayout>
+      <AppLayout breadcrumbs={breadcrumbs}>
         <Head title="Laporan Capaian" />
         <div 
           className="flex h-full flex-1 flex-col gap-4 rounded-xl p-6 overflow-x-auto"
           style={{
-            backgroundImage: `url(${patternBg})`,
-            // backgroundColor: '#f3f4f6',
+            backgroundImage: `url(${patternBg})`
           }}
         >
           {/* Header */}
@@ -353,21 +358,7 @@ import patternBg from '../assets/bg-pattern3.png'; // Import background pattern
             </div>
           </div>
           
-          {/* Chart Section */}
-          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-            <div className="p-4 border-b">
-              <div className="flex items-center mb-1">
-                <BarChart3 size={18} className="mr-2 text-[#E62F2A]" />
-                <h2 className="text-lg font-semibold">Grafik Capaian</h2>
-              </div>
-              <p className="text-sm text-gray-500">
-                Visualisasi capaian indikator dalam bentuk grafik
-              </p>
-            </div>
-            <div className="p-6 text-center text-gray-500 italic">
-              Grafik akan ditambahkan pada pengembangan berikutnya
-            </div>
-          </div>
+
         </div>
       </AppLayout>
     );

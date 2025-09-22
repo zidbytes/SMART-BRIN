@@ -30,7 +30,7 @@ class ReportController extends Controller
     {
         $this->authorize('viewReport', Document::class);
 
-        return Inertia::render('report-capaian', $this->getReportData($request));
+        return Inertia::render('ReportCapaian', $this->getReportData($request));
     }
 
     public function export(Request $request)
@@ -43,31 +43,28 @@ class ReportController extends Controller
             $format = $request->input('format', 'excel');
             $period = $this->getPeriodDisplay($data);
             
-            // Format filename
             $filename = 'laporan-capaian_' . $period;
             
-            // Calculate percentage and status for each row
             $rows = collect($data['capaian'])->map(
                 function($value, $key) use ($data) {
                     $target = $data['target'][$key] ?? 0;
                     $percentage = $target > 0 ? min(100, round(($value / $target) * 100)) : 0;
-                    
+
                     $status = 'Belum Tercapai';
                     if ($percentage >= 100) {
                         $status = 'Tercapai';
                     } elseif ($percentage >= 75) {
                         $status = 'Hampir Tercapai';
                     }
-                    
-                    // Format dana_eksternal as currency
+
                     $targetFormatted = $key === 'dana_eksternal' 
                         ? 'Rp ' . number_format($target, 0, ',', '.') 
                         : $target;
-                        
+
                     $valueFormatted = $key === 'dana_eksternal'
                         ? 'Rp ' . number_format($value, 0, ',', '.')
                         : $value;
-                    
+
                     return [
                         ucfirst(str_replace('_', ' ', $key)),
                         $targetFormatted,
@@ -83,16 +80,11 @@ class ReportController extends Controller
             switch ($format) {
                 case 'pdf':
                     return $this->exportPdf($rows, $period, $filename);
-                
                 case 'word':
                     return $this->exportWord($rows, $period, $filename);
-                
                 case 'excel':
                 default:
-                    return Excel::download(
-                        new ReportExport($rows),
-                        $filename . '.xlsx'
-                    );
+                    return Excel::download(new ReportExport($rows), $filename . '.xlsx');
             }
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -100,45 +92,25 @@ class ReportController extends Controller
             return back()->with('error', 'Gagal mengekspor laporan: ' . $e->getMessage());
         }
     }
-    
-    /**
-     * Export report data to PDF format
-     */
+
     private function exportPdf(array $rows, string $period, string $filename)
     {
-        // Define the indicators mapping (to match your template's expectations)
-        $indicators = [
-            'kekayaan_intelektual' => 'Kekayaan Intelektual',
-            'publikasi_ilmiah_global' => 'Publikasi Ilmiah Global',
-            'purwarupa' => 'Purwarupa',
-            'kerjasama_internasional' => 'Kerjasama Internasional',
-            'kerjasama_nasional' => 'Kerjasama Nasional',
-            'dana_eksternal' => 'Dana Eksternal',
-            'sdm_studi_lanjut' => 'SDM Studi Lanjut',
-            'postdoc_visiting' => 'Postdoc / Visiting',
-            'pelatihan_internasional' => 'Pelatihan Internasional',
-        ];
-        
         $data = [
             'rows' => $rows,
             'period' => $period,
-            'date' => now()->translatedFormat('d F Y'),
-            'indicators' => $indicators  // Add the indicators variable
+            'date' => now()->translatedFormat('d F Y')
         ];
-        
+
         $pdf = Pdf::loadView('exports.report-pdf', $data)
             ->setPaper('a4')
             ->setOption('margin-top', 20)
             ->setOption('margin-right', 20)
             ->setOption('margin-bottom', 20)
             ->setOption('margin-left', 20);
-        
+
         return $pdf->download($filename . '.pdf');
     }
-    
-    /**
-     * Export report data to Word (DOCX) format
-     */
+
     private function exportWord(array $rows, string $period, string $filename)
     {
         $data = [
@@ -146,24 +118,21 @@ class ReportController extends Controller
             'period' => $period,
             'date' => now()->translatedFormat('d F Y')
         ];
-        
+
         $headers = [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'Content-Disposition' => 'attachment; filename="' . $filename . '.docx"'
         ];
-        
+
         return response()->view('exports.report-word', $data, 200, $headers);
     }
-    
-    /**
-     * Get formatted period display for the report
-     */
+
     private function getPeriodDisplay(array $data): string
     {
         $tahun = $data['tahun'];
         $bulan = $data['bulan'];
         $triwulan = $data['triwulan'];
-        
+
         if ($bulan) {
             $monthNames = [
                 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -218,27 +187,13 @@ class ReportController extends Controller
         ];
     }
 
-    /**
-     * Hitung total berdasarkan relasi document dan kondisi tambahan (jika ada).
-     */
     private function countWithFilter(string $modelClass, \Closure $range, array $extra = []): int
     {
         return $modelClass::whereHas('document', $range)
-            ->when($extra, function($q) use ($extra) {
-                foreach ($extra as $key => $value) {
-                    if (is_array($value)) {
-                        $q->whereIn($key, $value);
-                    } else {
-                        $q->where($key, $value);
-                    }
-                }
-            })
+            ->when($extra, fn($q) => $q->where($extra))
             ->count();
     }
 
-    /**
-     * Hitung total nilai dana eksternal.
-     */
     private function sumDanaEksternal(\Closure $range): float|int
     {
         return DocumentPks::whereHas('document', $range)

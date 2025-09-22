@@ -29,24 +29,13 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
     // ==============================================
     Publikasi: [
         { label: 'Judul Publikasi Global', name: 'judul', type: 'text', required: true },
-        // {
-        //     label: 'Kelompok Riset',
-        //     name: 'kelompokRiset',
-        //     type: 'select',
-        //     options: [
-        //         { value: 'Information Retrieval', label: 'Information Retrieval' },
-        //         { value: 'Human Computer Interaction and Visualisation', label: 'Human Computer Interaction and Visualisation' },
-        //         { value: 'Knowledge and Data Engineering', label: 'Knowledge and Data Engineering' },
-        //         { value: 'Digital Government', label: 'Digital Government' },
-        //         { value: 'Natural Language Processing', label: 'Natural Language Processing' },
-        //     ],
-        // },
         { label: 'Authors ', name: 'authorsCivitasPRSDI', type: 'text', placeholder: 'Contoh: Arief, S.Kom., M.Kom, Rizki Alfariz', required: true },
         { label: 'Authors Non-PRSDI', name: 'authorsNonCivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
         {
             label: 'Jenis Dokumen Publikasi',
-            name: 'jenis DokumenJurnalProsidingBagbook',
+            name: 'jenisDokumen/Jurnal/Prosiding/Bagbook',
             type: 'select',
+            required: true,
             options: [
                 { value: 'Jurnal', label: 'Jurnal' },
                 { value: 'Prosiding', label: 'Prosiding' },
@@ -57,6 +46,7 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
             label: 'Status Dokumen Publikasi',
             name: 'statusDokumen',
             type: 'select',
+            required: true,
             options: [
                 { value: 'Published', label: 'Published' },
                 { value: 'Accepted', label: 'Accepted' },
@@ -73,6 +63,7 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
             label: 'Terindeks Scopus',
             name: 'terindeksScopus',
             type: 'select',
+            required: true,
             options: [
                 { value: 'Ya', label: 'Ya' },
                 { value: 'Tidak', label: 'Tidak' },
@@ -137,8 +128,9 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
         },
         {
             label: 'Jenis Kekayaan Intelektual',
-            name: 'JenisKekayaanIntelektual',
+            name: 'JenisDokumen',
             type: 'select',
+            required: true,
             options: [
                 { value: 'Hak Cipta', label: 'Hak Cipta' },
                 { value: 'Paten', label: 'Paten' },
@@ -169,11 +161,18 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
     // ==============================================
     PKS: [
         { label: 'Judul', name: 'judul', type: 'text', required: true },
-        { label: 'PIC Kegiatan (Sivitas PRSDI)', name: 'PICKegiatanSivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
+        {
+            label: 'PIC Kegiatan (Sivitas PRSDI)',
+            name: 'PICKegiatanSivitasPRSDI',
+            type: 'text',
+            placeholder: 'Contoh: Arief, S.Kom., M.Kom, Rizki Alfariz',
+            required: true,
+        },
         { label: 'PIC Kegiatan (Non Sivitas PRSDI)', name: 'PICKegiatanNonSivitasPRSDI', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
         {
             label: 'Tipe',
             name: 'tipe',
+            required: true,
             type: 'select',
             options: [
                 { value: 'Dana Eksternal', label: 'Dana Eksternal' },
@@ -184,13 +183,14 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
         {
             label: 'Jenis',
             name: 'jenis',
+            required: true,
             type: 'select',
             options: [
                 { value: 'Dalam Negeri', label: 'Dalam Negeri' },
                 { value: 'Luar Negeri', label: 'Luar Negeri' },
             ],
         },
-        { label: 'Sumber', name: 'sumber', type: 'text' },
+        { label: 'Sumber', name: 'sumber', type: 'text', placeholder: 'Contoh: RIIM/Mitra/Hibah' },
         {
             label: 'Output',
             name: 'output',
@@ -200,15 +200,15 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
                 { value: 'In Kind', label: 'In Kind' },
             ],
         },
-        { label: 'Pihak K3', name: 'pihakK3', type: 'text', placeholder: 'Kosongkan jika tidak ada' },
-        { label: 'Nilai', name: 'nilai', type: 'text', placeholder: 'Contoh: 100.000.000, Jika tidak ada tuliskan: 0' },
+        { label: 'Pihak K3', name: 'pihakK3', type: 'text', placeholder: 'Contoh: Deputi Bidang Fasilitasi Riset dan Inovasi/Mitra' },
+        { label: 'Nilai', name: 'nilai', type: 'text', placeholder: 'Contoh: 100000000, tanpa titik (.) atau koma (,). Jika tidak ada tuliskan: 0' },
         { label: 'Keterangan', name: 'keterangan', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
         { label: 'No Kerjasama', name: 'noKerjasama', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
-        { label: 'Tanggal Kerjasama', name: 'tglKerjasama', type: 'date', required: true },
+        { label: 'Tanggal Kerjasama', name: 'tglKerjasama', type: 'date' },
         { label: 'No Perjanjian', name: 'noPerjanjian', type: 'text', placeholder: 'Kosongkan jika tidak ada!' },
         { label: 'Link Upload', name: 'linkUpload', type: 'text', required: true, placeholder: 'Contoh: https://drive.google.com/' },
         { label: 'Tanggal Perjanjian', name: 'tglPerjanjian', type: 'date' },
-        { label: 'Tahun PKS', name: 'tahunPKS', type: 'select', placeholder: 'Kosongkan jika tidak ada!', options: generateYearOptions(2015) },
+        { label: 'Tahun PKS', name: 'tahunPKS', type: 'select', placeholder: 'Kosongkan jika tidak ada!', options: generateYearOptions(2020) },
         { label: 'Link Data Pendukung', name: 'linkDataPendukung', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },
         {
             label: 'Sudah unggah dokumen PKS / Dana Eksternal di drive?',
@@ -286,6 +286,7 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
         {
             label: 'Jenjang Pendidikan Ditempuh',
             name: 'programPendidikan',
+            required: true,
             type: 'select',
             options: [
                 { value: 'S2', label: 'S2' },
@@ -299,7 +300,7 @@ export const fieldTemplates: Record<string, FieldTemplate[]> = {
             name: 'tahunMasuk',
             type: 'select',
             required: true,
-            options: generateYearOptions(2015),
+            options: generateYearOptions(2020),
         },
         { label: 'Keterangan', name: 'keterangan', type: 'text', placeholder: 'Contoh: "Mulai Tugas Belajar bulan Agustus 2025"' },
         { label: 'Link Data Pendukung', name: 'linkDataPendukung', type: 'text', placeholder: 'Contoh: https://drive.google.com/' },

@@ -1,4 +1,4 @@
-import { type BreadcrumbItem, type SharedData } from '@/types';
+ 
 import { Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -20,16 +20,20 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 type ProfileForm = {
-    name: string;
-    email: string;
+  name: string;
+  email: string;
+  nip: string; 
+  jenis_kelamin: string; 
 };
 
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
     const { auth } = usePage<SharedData>().props;
 
-    const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<Required<ProfileForm>>({
+    const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<ProfileForm>({
         name: auth.user.name,
         email: auth.user.email,
+        nip: typeof auth.user.nip === 'string' ? auth.user.nip : (auth.user.nip ?? ''),
+        jenis_kelamin: typeof auth.user.jenis_kelamin === 'string' ? auth.user.jenis_kelamin : (auth.user.jenis_kelamin ?? ''),
     });
 
     const submit: FormEventHandler = (e) => {
@@ -46,67 +50,69 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall title="Profile information" description="Update your name and email address" />
+                    <HeadingSmall title="Profile information" description="Update your name, email, NIP, and jenis_kelamin" />
 
                     <form onSubmit={submit} className="space-y-6">
+                        {/* Name */}
                         <div className="grid gap-2">
                             <Label htmlFor="name">Name</Label>
-
                             <Input
                                 id="name"
-                                className="mt-1 block w-full"
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
                                 required
                                 autoComplete="name"
                                 placeholder="Full name"
                             />
-
                             <InputError className="mt-2" message={errors.name} />
                         </div>
 
+                        {/* Email */}
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email address</Label>
-
                             <Input
                                 id="email"
                                 type="email"
-                                className="mt-1 block w-full"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
                                 required
-                                autoComplete="username"
+                                autoComplete="email"
                                 placeholder="Email address"
                             />
-
                             <InputError className="mt-2" message={errors.email} />
                         </div>
 
-                        {mustVerifyEmail && auth.user.email_verified_at === null && (
-                            <div>
-                                <p className="-mt-4 text-sm text-muted-foreground">
-                                    Your email address is unverified.{' '}
-                                    <Link
-                                        href={route('verification.send')}
-                                        method="post"
-                                        as="button"
-                                        className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                    >
-                                        Click here to resend the verification email.
-                                    </Link>
-                                </p>
+                        {/* NIP */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="nip">NIP</Label>
+                            <Input
+                                id="nip"
+                                value={data.nip}
+                                onChange={(e) => setData('nip', e.target.value)}
+                                placeholder="Nomor Induk Pegawai"
+                            />
+                            <InputError className="mt-2" message={errors.nip} />
+                        </div>
 
-                                {status === 'verification-link-sent' && (
-                                    <div className="mt-2 text-sm font-medium text-green-600">
-                                        A new verification link has been sent to your email address.
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        {/* jenis_kelamin */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="jenis_kelamin">Jenis Kelamin</Label>
+                            <select
+                                id="jenis_kelamin"
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                value={data.jenis_kelamin}
+                                onChange={(e) => setData('jenis_kelamin', e.target.value)}
+                            >
+                                <option value="">Pilih Jenis Kelamin</option>
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
+                            <InputError className="mt-2" message={errors.jenis_kelamin} />
+                        </div>
 
+                        {/* Submit */}
                         <div className="flex items-center gap-4">
                             <Button disabled={processing}>Save</Button>
-
                             <Transition
                                 show={recentlySuccessful}
                                 enter="transition ease-in-out"

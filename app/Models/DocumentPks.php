@@ -37,11 +37,9 @@ class DocumentPks extends Model
         'tanggal_kerjasama',
         'no_perjanjian',
         'tanggal_perjanjian',
-        'link_upload',
         'status_upload',
         'tahun_pks',
         'link_bukti_dukung',
-        'catatan',
     ];
 
     /**

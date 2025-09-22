@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Import custom components
 import KpiCard from '@/components/KpiCard';
@@ -402,31 +402,33 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
     
     const userNotesCount = isResearcher ? 
         publicationsWithNotes.filter(note => note.user_id === auth?.user?.id).length : 0;
-    
-    // Debug notifications
-    console.log("Auth data:", auth);
-    console.log("Is researcher:", isResearcher);
-    console.log("User ID:", auth?.user?.id);
-    console.log("User notes count:", userNotesCount);
-    console.log("Publications with notes length:", publicationsWithNotes.length);
-
-    // Debug: Log data for debugging
-    React.useEffect(() => {
-        console.log('Target data received:', target);
-        console.log('Target publikasi_ilmiah_global:', target?.publikasi_ilmiah_global);
-        console.log('Tables data:', tables);
-        console.log('PublicationsWithNotes data:', tables.publicationsWithNotes);
-        console.log('DirectPublicationData data:', tables.directPublicationData);
-        
-        // Debug for Purwarupa data
-        console.log('Raw Purwarupa Research Group data (purwarupaByGroup):', charts.purwarupaByGroup);
-        console.log('Raw Purwarupa Status data:', charts.purwarupaByStatus);
-        console.log('Actual backend data keys:', Object.keys(charts));
-        console.log('Is purwarupaByGroup empty?', !charts.purwarupaByGroup || charts.purwarupaByGroup.length === 0);
-    }, [target, tables, charts]);
 
     // Set the year for data display consistently across all charts
     const dataYear = 2024;
+
+    // Hitung total dana eksternal
+    const danaEksternalTotal = charts.danaEksternalByYear
+        ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0)
+        : 0;
+
+    // Deteksi ukuran layar (client only)
+    const [isSmallScreen, setIsSmallScreen] = useState(false);
+    useEffect(() => {
+        const checkScreen = () => setIsSmallScreen(window.innerWidth < 900); // ubah breakpoint ke 900px
+        checkScreen();
+        window.addEventListener('resize', checkScreen);
+        return () => window.removeEventListener('resize', checkScreen);
+    }, []);
+
+    // Fungsi utilitas untuk format dana singkat (hanya tampilkan singkat di semua device)
+    function formatDanaCompact(amount: number): string {
+        if (amount >= 1_000_000_000) {
+            return `Rp${(amount / 1_000_000_000).toFixed(2).replace(/\.00$/, '')} M`;
+        } else if (amount >= 1_000_000) {
+            return `Rp${(amount / 1_000_000).toFixed(2).replace(/\.00$/, '')} Jt`;
+        }
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -437,8 +439,8 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                     backgroundImage: `url(${patternBg})`,
                 }}
             >
-                {/* Notification for researchers with catatan monev - only show if has notes */}
-                {isResearcher && userNotesCount > 0 && (
+                {/* Notification for researchers with catatan monev */}
+                {isResearcher && userNotesCount > 0 &&(
                     <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded shadow">
                         <div className="flex">
                             <div className="flex-shrink-0">
@@ -446,13 +448,12 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
                             </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-amber-700">
-                                    <strong>Perhatian!</strong> Anda memiliki {userNotesCount} dokumen dengan catatan dari tim Monev. 
-                                    <a href="/details" className="font-medium underline text-amber-700 hover:text-amber-600 ml-1">
-                                        Lihat detail
-                                    </a>
-                                </p>
+                            <div className="ml-3">                                    <p className="text-sm text-amber-700">
+                                        <strong>Perhatian!</strong> Anda memiliki <strong>{userNotesCount}</strong> dokumen dengan catatan dari tim Monev. 
+                                        <a href="/details" className="font-medium underline text-amber-700 hover:text-amber-600 ml-1">
+                                            Lihat detail
+                                        </a>
+                                    </p>
                             </div>
                         </div>
                     </div>
@@ -489,26 +490,19 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                     {/* Perolehan Dana Eksternal */}
                     <KpiCard 
                         title="Perolehan Dana Eksternal"
-                        value={charts.danaEksternalByYear ? 
-                            new Intl.NumberFormat('id-ID', { 
-                                style: 'currency', 
-                                currency: 'IDR',
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0
-                            }).format(charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0)) : 'Rp0'
-                        }
+                        value={formatDanaCompact(danaEksternalTotal)}
                         trend={target && target.dana_eksternal > 0 ? {
-                            value: (((charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) / target.dana_eksternal) * 100 - 100),
-                            isPositive: (charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) >= target.dana_eksternal
+                            value: ((danaEksternalTotal / target.dana_eksternal) * 100 - 100),
+                            isPositive: danaEksternalTotal >= target.dana_eksternal
                         } : undefined}
                         description={target && target.dana_eksternal > 0 
-                            ? `Capaian: ${Math.round((charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) / target.dana_eksternal * 100)}% dari target`
-                            : 'Target belum ditetapkan'}
+                            ? `Capaian: ${Math.round(danaEksternalTotal / target.dana_eksternal * 100)}% dari target (${formatDanaCompact(danaEksternalTotal)} / ${formatDanaCompact(target.dana_eksternal)})`
+                            : `Capaian: ${formatDanaCompact(danaEksternalTotal)} (target belum ditetapkan)`}
                         progress={{
-                            current: charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0,
+                            current: danaEksternalTotal,
                             target: target?.dana_eksternal,
                             customWidth: target && target.dana_eksternal > 0 
-                                ? `${Math.min(100, ((charts.danaEksternalByYear ? charts.danaEksternalByYear.reduce((total, item) => total + item.count, 0) : 0) / target.dana_eksternal) * 100)}%` 
+                                ? `${Math.min(100, (danaEksternalTotal / target.dana_eksternal) * 100)}%` 
                                 : '0%'
                         }}
                     />
@@ -578,12 +572,12 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                                 footerNote="Menampilkan distribusi publikasi berdasarkan jenis (jurnal, prosiding, dll)"
                             />
                             <BarChart 
-                                title="Scopus vs Non-Scopus" 
+                                title="Publikasi Scopus per Quartile" 
                                 data={charts.scopusData || []}
                                 className="w-full min-h-[400px] overflow-x-auto"
                                 layout="horizontal"
                                 dataYear={dataYear}
-                                footerNote="Q1-Q4 menunjukkan quartile jurnal Scopus berdasarkan peringkat"
+                                footerNote="Q1-Q4 menunjukkan quartile jurnal Scopus berdasarkan peringkat. Data diambil dari kolom 'reputasi'."
                             />
                             <ChartRadarStatus 
                                 data={charts.statusData || []} 
@@ -703,27 +697,44 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                         <div className="font-bold mb-2 text-[#E62F2A]">
                             {isResearcher ? 'Publikasi Anda dengan Catatan Monev' : 'Publikasi dengan Catatan Monev'}
                         </div>
-                        {/* Adding console log in useEffect for debugging */}
-                        <DataTable 
-                            data={isResearcher 
-                                ? publicationsWithNotes.filter(item => item.user_id === auth.user.id)
-                                : publicationsWithNotes} 
-                            columns={[
-                                { header: 'No.', accessor: 'id' },
-                                { header: 'Periset', accessor: 'periset' },
-                                { header: 'Judul Publikasi', accessor: 'judul' },
-                                { header: 'Catatan', accessor: 'catatan', 
-                                  render: (value) => (
-                                    <div className="max-w-md overflow-hidden text-ellipsis p-2 bg-amber-50 border-l-4 border-amber-500 rounded">
-                                      {String(value || '')}
-                                    </div>
-                                  )
-                                },
-                                { header: 'Tahun', accessor: 'tahun' },
-                                { header: 'Jenis', accessor: 'jenis', },
-                                { header: 'Status', accessor: 'status' },
-                            ]} 
-                        />
+                        
+                        {/* Tampilkan pesan jika tidak ada data catatan */}
+                        {(!publicationsWithNotes || publicationsWithNotes.length === 0) && (
+                            <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                                Tidak ada publikasi dengan catatan monev saat ini.
+                            </div>
+                        )}
+                        
+                        {/* Tampilkan tabel hanya jika ada data */}
+                        {publicationsWithNotes && publicationsWithNotes.length > 0 && (
+                            <DataTable 
+                                data={isResearcher 
+                                    ? (publicationsWithNotes || []).filter(item => 
+                                        item?.user_id === auth.user.id && 
+                                        item?.catatan && 
+                                        item.catatan !== '-' && 
+                                        item.catatan.trim() !== '')
+                                    : (publicationsWithNotes || []).filter(item => 
+                                        item?.catatan && 
+                                        item.catatan !== '-' && 
+                                        item.catatan.trim() !== '')} 
+                                columns={[
+                                    { header: 'No.', accessor: 'id' },
+                                    { header: 'Periset', accessor: 'periset' },
+                                    { header: 'Judul Publikasi', accessor: 'judul' },
+                                    { header: 'Catatan', accessor: 'catatan', 
+                                      render: (value) => (
+                                        <div className="max-w-md overflow-hidden text-ellipsis p-2 bg-amber-50 border-l-4 border-amber-500 rounded">
+                                          {String(value || '')}
+                                        </div>
+                                      )
+                                    },
+                                    { header: 'Tahun', accessor: 'tahun' },
+                                    { header: 'Jenis', accessor: 'jenis' },
+                                    { header: 'Status', accessor: 'status' }
+                                ]}
+                            />
+                        )}
                     </CardContent>
                 </Card>
                 
@@ -731,21 +742,32 @@ export default function DashboardPRSDI({ kpi, target, charts, tables }: Dashboar
                 <Card className="shadow-lg rounded-xl mb-6">
                     <CardContent className="p-4">
                         <div className="font-bold mb-2 text-[#E62F2A]">Daftar Publikasi Terbaru</div>
-                        <DataTable
-                            data={tables.directPublicationData || []}
-                            columns={[
-                                { header: 'No.', accessor: 'id' },
-                                { header: 'Periset', accessor: 'periset' },
-                                { header: 'Judul Publikasi', accessor: 'judul_publikasi' },
-                                { header: 'Kelompok Riset', accessor: 'kelompok_riset' },
-                                { header: 'Jenis', accessor: 'jenis' },
-                                { header: 'Status', accessor: 'status' },
-                                { header: 'Jurnal', accessor: 'nama_jurnal' },
-                                { header: 'Scopus', accessor: 'scopus_indexed' },
-                                { header: 'Reputasi', accessor: 'reputasi' },
-                                { header: 'Tahun', accessor: 'tahun' },
-                            ]}
-                        />
+                        
+                        {/* Tampilkan pesan jika tidak ada data publikasi */}
+                        {(!tables.directPublicationData || tables.directPublicationData.length === 0) && (
+                            <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                                Tidak ada data publikasi terbaru saat ini.
+                            </div>
+                        )}
+                        
+                        {/* Tampilkan tabel hanya jika ada data */}
+                        {tables.directPublicationData && tables.directPublicationData.length > 0 && (
+                            <DataTable
+                                data={tables.directPublicationData || []}
+                                columns={[
+                                    { header: 'No.', accessor: 'id' },
+                                    { header: 'Periset', accessor: 'periset' },
+                                    { header: 'Judul Publikasi', accessor: 'judul_publikasi' },
+                                    { header: 'Kelompok Riset', accessor: 'kelompok_riset' },
+                                    { header: 'Jenis', accessor: 'jenis' },
+                                    { header: 'Status', accessor: 'status' },
+                                    { header: 'Jurnal', accessor: 'nama_jurnal' },
+                                    { header: 'Scopus', accessor: 'scopus_indexed' },
+                                    { header: 'Reputasi', accessor: 'reputasi' },
+                                    { header: 'Tahun', accessor: 'tahun' }
+                                ]}
+                            />
+                        )}
                     </CardContent>
                 </Card>
 

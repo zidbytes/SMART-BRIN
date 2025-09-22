@@ -34,11 +34,10 @@ class DocumentKekayaanIntelektual extends Model
         'nonprsdi_inventors',
         'jenis',
         'no_pendaftaran',
-        'tanggal_daftar',
         'no_sertifikat',
         'tanggal_sertifikasi',
-        'link_upload',
         'link_dokumen',
+        'status_upload',
     ];
 
     /**

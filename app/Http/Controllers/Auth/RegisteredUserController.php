@@ -26,6 +26,7 @@ class RegisteredUserController extends Controller
             'Knowledge and Data Engineering',
             'Human Computer Interaction and Visualisation   ',
             'Digital Government',
+            'Monev',
         ];
 
         return Inertia::render('auth/register', [
@@ -44,13 +45,17 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'research_group' => 'required|in:Information Retrieval,Natural Language Processing,Knowledge and Data Engineering,Human Computer Interaction and Visualisation,Digital Government',
+            'nip' => 'required|numeric|unique:users,nip',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'research_group' => 'required|in:Information Retrieval,Natural Language Processing,Knowledge and Data Engineering,Human Computer Interaction and Visualisation,Digital Government,Monev',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'nip' => $request->nip,
+            'jenis_kelamin' => $request->jenis_kelamin,
             'research_group' => $request->research_group,
         ]);
 
@@ -60,4 +65,5 @@ class RegisteredUserController extends Controller
 
         return redirect()->intended(route('dashboard'));
     }
+
 }

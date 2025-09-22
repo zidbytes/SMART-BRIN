@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\DocumentUpdateRequest;
 use App\Models\{
     Document,
     DocumentPublication,
@@ -21,151 +23,240 @@ class DetailController extends Controller
 {
     public function index(): Response
     {
-        $user = Auth::user();
-        $filter = $user->role === 'researcher' ? fn($q) => $q->where('user_id', $user->id) : fn() => null;
+        DB::beginTransaction();
+        try {
+            $user = Auth::user();
+            $filter = $user->role === 'researcher' ? fn($q) => $q->where('user_id', $user->id) : fn() => null;
 
-        $types = [
+            $types = [
+                'publication' => DocumentPublication::class,
+                'ki' => DocumentKekayaanIntelektual::class,
+                'pks' => DocumentPks::class,
+                'loa' => DocumentLoaStudiLanjut::class,
+                'pdvr' => DocumentPelatihanLuarNegeri::class,
+                'purwarupa' => DocumentPurwarupa::class,
+            ];
+
+            $data = [];
+            foreach ($types as $type => $modelClass) {
+                $data[$this->getInertiaKey($type)] = $this->getData($modelClass, $filter, $type)->map(fn($item) => array_merge($item, [
+                    'unique_id' => $type . '-' . $item['No'],
+                ]));
+            }
+
+            DB::commit();
+            return Inertia::render('details', $data);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return Inertia::render('details-error', [
+                'message' => 'Terjadi kesalahan saat mengambil data dokumen.',
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function stamp(string $type, int $id): RedirectResponse
+    {
+        abort_unless(Auth::user()?->role === 'monev', 403);
+        DB::beginTransaction();
+        try {
+            $item = $this->findItem($type, $id);
+            $item->document->update([
+                'monev_stamp' => $item->document->monev_stamp ? null : now(),
+            ]);
+            DB::commit();
+            return back()->with('success', 'Stamp diperbarui.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal memperbarui stamp: ' . $e->getMessage());
+        }
+    }
+
+    public function update(DocumentUpdateRequest $request, string $type, int $id)
+    {
+        $user = Auth::user();
+        // Debug logging to check incoming data
+        \Log::debug("Update request for {$type}/{$id}", [
+            'request_data' => $request->all(),
+            'validated_data' => $request->validated(),
+            'user_id' => $user->id,
+            'user_role' => $user->role
+        ]);
+        
+        DB::beginTransaction();
+        try {
+            $item = $this->findItem($type, $id);
+            $document = $item->document;
+
+            // Check permissions based on role
+            if ($user->role === 'monev') {
+                // Monev users can update status and notes
+                if ($request->has('status_monev')) {
+                    $validStatuses = ['approved', 'rejected', 'submitted', 'revised', '-'];
+                    $newStatus = $request->status_monev;
+                    
+                    if (in_array($newStatus, $validStatuses)) {
+                        $document->status = $newStatus;
+                        $document->save();
+                        \Log::debug("Monev updated document status", ['new_status' => $newStatus]);
+                    } else {
+                        return response()->json(['error' => 'Status tidak valid'], 422);
+                    }
+                }
+                
+                if ($request->has('notes')) {
+                    $document->notes = $request->notes;
+                    $document->save();
+                    \Log::debug("Monev updated document notes", ['notes' => $document->notes]);
+                }
+            } else {
+                // Regular users can only update their own documents
+                abort_unless($document->user_id === $user->id, 403, 'Tidak memiliki izin untuk mengubah dokumen ini.');
+                
+                // Check if document is already approved
+                if ($document->status === 'approved') {
+                    return response()->json(['error' => 'Dokumen yang sudah disetujui tidak dapat diubah'], 422);
+                }
+                
+                // Get mapped data using our new request class
+                
+                // Get document data (fields that belong to the Document model)
+                $documentData = $request->getMappedDocumentData();
+                if (!empty($documentData)) {
+                    $document->fill($documentData);
+                    \Log::debug("Document fields to update", ['fields' => $documentData]);
+                }
+                
+                // Get item data (fields that belong to the specific document type model)
+                $mappedData = $request->getMappedItemData();
+                \Log::debug("Mapped fields for database update", [
+                    'type' => $type, 
+                    'mapped_fields' => $mappedData
+                ]);
+                
+                if (!empty($mappedData)) {
+                    $item->fill($mappedData);
+                    \Log::debug("Item fields to update", ['type' => $type, 'fields' => $mappedData]);
+                }
+            }
+
+            // Ensure both document and item are saved
+            try {
+                // Debug database column information
+                $docColumns = \Schema::getColumnListing($item->getTable());
+                \Log::debug("Database columns for {$type}", [
+                    'table' => $item->getTable(),
+                    'available_columns' => $docColumns,
+                    'attributes_to_save' => array_keys($item->getAttributes())
+                ]);
+                
+                // Check for any columns that might not exist in the database
+                $missingColumns = array_diff(array_keys($item->getAttributes()), $docColumns);
+                if (!empty($missingColumns)) {
+                    \Log::warning("Attempting to save to non-existent columns", [
+                        'missing_columns' => $missingColumns,
+                        'type' => $type
+                    ]);
+                    
+                    // Remove attributes that don't have corresponding database columns
+                    foreach ($missingColumns as $column) {
+                        unset($item->{$column});
+                    }
+                }
+                
+                \Log::debug("Saving document", ['document_id' => $document->id, 'attributes' => $document->getAttributes()]);
+                $document->save();
+                
+                \Log::debug("Saving item", ['item_id' => $item->id, 'item_type' => get_class($item), 'attributes' => $item->getAttributes()]);
+                $item->save();
+                
+                DB::commit();
+                \Log::debug("Transaction committed successfully");
+                
+                // Verify the changes by re-fetching the models
+                $refreshedDocument = Document::find($document->id);
+                $refreshedItem = $this->findItem($type, $id);
+                \Log::debug("Verification after save - Document", [
+                    'document_id' => $refreshedDocument->id,
+                    'attributes' => $refreshedDocument->getAttributes()
+                ]);
+                \Log::debug("Verification after save - Item", [
+                    'item_id' => $refreshedItem->id, 
+                    'attributes' => $refreshedItem->getAttributes()
+                ]);
+            } catch (\Exception $e) {
+                \Log::error("Error saving models", [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e; // Rethrow to be caught by the outer catch block
+            }
+            
+            // Untuk request AJAX, return JSON
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => 'Data berhasil diperbarui',
+                    'document_id' => $document->id,
+                    'item_id' => $item->id
+                ]);
+            }
+            
+            // Untuk request normal, redirect dengan message
+            return back()->with('success', 'Data berhasil diperbarui.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error("Error updating document", [
+                'type' => $type,
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Untuk request AJAX, return JSON error
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'error' => 'Gagal memperbarui data: ' . $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'file' => $e->getFile() . ':' . $e->getLine()
+                ], 500);
+            }
+            
+            return back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+        }
+    }
+
+    // public function destroy(string $type, int $id): RedirectResponse
+    // {
+    //     $user = Auth::user();
+    //     DB::beginTransaction();
+    //     try {
+    //         $item = $this->findItem($type, $id);
+    //         $document = $item->document;
+
+    //         if (($user->role === 'researcher' && $user->id === $document->user_id) || $user->role === 'head') {
+    //             $document->delete();
+    //             DB::commit();
+    //             return back()->with('success', 'Dokumen berhasil dihapus.');
+    //         }
+
+    //         DB::rollBack();
+    //         abort(403);
+    //     } catch (\Throwable $e) {
+    //         DB::rollBack();
+    //         return back()->with('error', 'Gagal menghapus dokumen: ' . $e->getMessage());
+    //     }
+    // }
+
+    private function getModelClass(string $type): ?string
+    {
+        return [
             'publication' => DocumentPublication::class,
             'ki' => DocumentKekayaanIntelektual::class,
             'pks' => DocumentPks::class,
             'loa' => DocumentLoaStudiLanjut::class,
             'pdvr' => DocumentPelatihanLuarNegeri::class,
             'purwarupa' => DocumentPurwarupa::class,
-        ];
-
-        $data = [];
-        foreach ($types as $type => $modelClass) {
-            $data[$this->getInertiaKey($type)] = $this->getData($modelClass, $filter, $type)->map(fn($item) => array_merge($item, [
-                'unique_id' => $type . '-' . $item['No'],
-            ]));
-        }
-
-        return Inertia::render('details', $data);
-    }
-
-    public function stamp(string $type, int $id): RedirectResponse
-    {
-        abort_unless(Auth::user()?->role === 'monev', 403);
-        $item = $this->findItem($type, $id);
-
-        // Ambil bulan saat ini dalam format nama bulan
-        $currentMonth = now()->format('F');
-
-        // Jika saat ini belum ada stamp, maka ketika diberi stamp update bulan menjadi bulan saat ini
-        if (!$item->document->monev_stamp) {
-            // Update hanya monev_stamp tanpa mengubah kolom bulan
-            $item->document->update([
-                'monev_stamp' => now(),
-            ]);
-            
-            // Untuk jenis dokumen publikasi, update kolom Bulan di entity publication jika ada
-            // dan jika kolom bulan tersedia di tabel
-            if ($type === 'publication') {
-                // Cek apakah kolom bulan ada di tabel publication
-                try {
-                    if (array_key_exists('bulan', $item->getAttributes())) {
-                        $item->update(['bulan' => $currentMonth]);
-                    }
-                } catch (\Exception $e) {
-                    // Jika error karena kolom tidak ada, abaikan saja
-                    // dan lanjutkan eksekusi
-                }
-            }
-            
-            return back()->with('success', "Stamp berhasil ditambahkan pada bulan $currentMonth.");
-        } else {
-            // Jika menghapus stamp, cukup set monev_stamp menjadi null
-            $item->document->update([
-                'monev_stamp' => null
-            ]);
-            
-            return back()->with('success', 'Stamp berhasil dihapus.');
-        }
-
-        return back()->with('success', 'Stamp diperbarui.');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     * 
-     * @param \Illuminate\Http\Request $request
-     * @param string $type
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function update(Request $request, string $type, int $id)
-    {
-        // 1. Otorisasi: Pastikan hanya 'monev' yang bisa menjalankan aksi ini.
-        abort_if(Auth::user()?->role !== 'monev', 403, 'Hanya Monev yang dapat mengedit catatan.');
-
-        // 2. Validasi request
-        $validatedData = $request->validate([
-            'notes' => 'nullable|string|max:1000',
-            'status_monev' => 'nullable|string|max:100', // Tambahkan validasi status_monev
-        ]);
-
-        // 3. Dapatkan kelas model berdasarkan tipe
-        $modelClass = $this->getModelClass($type);
-        abort_if(is_null($modelClass), 404, 'Tipe dokumen tidak ditemukan.');
-
-        // 4. Cari item dokumen beserta relasi 'document'
-        $item = $modelClass::with('document')->findOrFail($id);
-        $document = $item->document;
-
-        // 5. Buat array updateData untuk mengumpulkan data yang akan diupdate
-        $updateData = [];
-        
-        // Tambahkan notes ke updateData jika ada dalam request
-        if ($request->has('notes')) {
-            $updateData['notes'] = $validatedData['notes'];
-        }
-        
-        // Tambahkan status ke updateData jika status_monev ada dalam request
-        if ($request->has('status_monev')) {
-            $updateData['status'] = $validatedData['status_monev'];
-        }
-        
-        // Lakukan update jika ada data yang perlu diupdate
-        if (!empty($updateData)) {
-            $document->update($updateData);
-        }
-
-        // 6. Return JSON response untuk API
-        return response()->json([
-            'success' => true,
-            'message' => 'Data berhasil diperbarui.',
-            'updated_fields' => array_keys($updateData)
-        ]);
-    }
-
-    public function destroy(string $type, int $id): RedirectResponse
-    {
-        $user = Auth::user();
-        $item = $this->findItem($type, $id);
-        $document = $item->document;
-
-        if (($user->role === 'researcher' && $user->id === $document->user_id) || $user->role === 'head') {
-            $document->delete();
-            return back()->with('success', 'Dokumen berhasil dihapus.');
-        }
-
-        abort(403);
-    }
-
-    /**
-     * Helper function untuk mendapatkan model class berdasarkan tipe
-     */
-    private function getModelClass(string $type): ?string
-    {
-        return match ($type) {
-            'publication' => DocumentPublication::class,
-            'ki' => DocumentKekayaanIntelektual::class,
-            'pks' => DocumentPks::class,
-            'loa' => DocumentLoaStudiLanjut::class,
-            'pdvr', 'pelatihan' => DocumentPelatihanLuarNegeri::class,
-            'purwarupa' => DocumentPurwarupa::class,
-            default => null,
-        };
+        ][$type] ?? null;
     }
 
     private function getInertiaKey(string $type): string
@@ -202,15 +293,11 @@ class DetailController extends Controller
         $formatDate = fn($date, $format = 'Y-m-d') => optional($date)->format($format) ?? '-';
         $isStamped = !is_null($doc->monev_stamp);
 
-        // Ambil bulan dari waktu stamp jika ada, atau gunakan teks "-" jika tidak ada stamp
-        $bulanMonev = $isStamped ? $formatDate($doc->monev_stamp, 'F') : '-';
-        
         $common = [
             'No' => $item->id,
             'Periode Input' => $formatDate($doc->created_at),
             'Monev Stamp' => $isStamped,
             'Periode Stamp' => $formatDate($doc->monev_stamp, 'Y-m-d H:i'),
-            'Bulan Monev' => $bulanMonev, // Tambahkan bulan dari waktu stamp
             'Status Dokumen' => $doc->status ?? '-',
             'Catatan Monev' => $doc->notes ?? '-',
         ];
@@ -236,10 +323,10 @@ class DetailController extends Controller
                 'Nama Jurnal/Prosiding' => $item->nama_jurnal ?? '-',
                 'Terindeks Scopus' => $item->scopus_indexed ? 'Ya' : 'Tidak',
                 'Reputasi' => $item->reputasi ?? '-',
-                'File di Google Drive' => $item->file_drive_link ?? '-',
                 'URL' => $item->url ?? '-',
                 'DOI' => $item->doi ?? '-',
-                'Status Monev' => $doc->status ?? '-',
+                'Status Upload' => $item->status_upload ?? '-',
+                'Status Dokumen' => $doc->status ?? '-',
                 'Catatan Monev' => $doc->notes ?? '-',
             ],
             'ki' => [
@@ -260,12 +347,11 @@ class DetailController extends Controller
                 'Status' => $item->status ?? '-',
                 'Jenis' => $item->jenis ?? '-',
                 'No Pendaftaran' => $item->no_pendaftaran ?? '-',
-                'Tanggal Daftar' => $formatDate($item->tanggal_daftar),
                 'No Sertifikat' => $item->no_sertifikat ?? '-',
                 'Tanggal Sertifikasi' => $formatDate($item->tanggal_sertifikasi),
-                'Link Upload' => $item->link_upload ?? '-',
                 'LINK Dokumen' => $item->link_dokumen ?? '-',
-                'Status Monev' => $doc->status ?? '-',
+                'Status Upload' => $item->status_upload ?? '-',
+                'Status Dokumen' => $doc->status ?? '-',
                 'Catatan Monev' => $doc->notes ?? '-',
             ],
             'pks' => [
@@ -290,12 +376,10 @@ class DetailController extends Controller
                 'TANGGAL KERJASAMA' => $formatDate($item->tanggal_kerjasama),
                 'NO PERJANJIAN' => $item->no_perjanjian ?? '-',
                 'TANGGAL PERJANJIAN' => $formatDate($item->tanggal_perjanjian),
-                'LINK UPLOAD' => $item->link_upload ?? '-',
                 'STATUS UPLOAD' => $item->status_upload ?? '-',
                 'TAHUN PKS' => $item->tahun_pks ?? '-',
                 'LINK BUKTI DUKUNG' => $item->link_bukti_dukung ?? '-',
-                'CATATAN' => $item->catatan ?? '-',
-                'Status Monev' => $doc->status ?? '-',
+                'Status Dokumen' => $doc->status ?? '-',
                 'Catatan Monev' => $doc->notes ?? '-',
             ],
             'loa' => [
@@ -307,11 +391,11 @@ class DetailController extends Controller
                 'JENJANG PENDIDIKAN DITEMPUH' => $item->jenjang_pendidikan ?? '-',
                 'NAMA UNIVERSITAS' => $item->nama_universitas ?? '-',
                 'STATUS' => $item->status ?? '-',
+                'Status Upload' => $item->status_upload ?? '-',
                 'KETERANGAN' => $item->keterangan ?? '-',
                 'UPLOAD DAKUNG' => $item->upload_dakung ?? '-',
                 'tahun masuk' => $item->tahun_masuk ?? '-',
-                'direct evidence' => $item->direct_evidence ?? '-',
-                'Status Monev' => $doc->status ?? '-',
+                'Status Dokumen' => $doc->status ?? '-',
                 'Catatan Monev' => $doc->notes ?? '-',
             ],
             'pdvr' => [
@@ -325,8 +409,8 @@ class DetailController extends Controller
                 'JENIS' => $item->jenis ?? '-',
                 'KETERANGAN' => $item->keterangan ?? '-',
                 'UPLOAD DAKUNG' => $item->upload_dakung ?? '-',
-                'direct link' => $item->direct_link ?? '-',
-                'Status Monev' => $doc->status ?? '-',
+                'Status Upload' => $item->status_upload ?? '-',
+                'Status Dokumen' => $doc->status ?? '-',
                 'Catatan Monev' => $doc->notes ?? '-',
             ],
             'purwarupa' => [
@@ -344,10 +428,10 @@ class DetailController extends Controller
                 'NON SIVITAS PRSDI' => $item->non_sivitas_prsdi ?? '-',
                 'JENIS' => $item->jenis ?? '-',
                 'STATUS' => $item->status ?? '-',
+                'Status Upload' => $item->status_upload ?? '-',
                 'NAMA MITRA' => $item->nama_mitra ?? '-',
-                'UPLOAD GDRIVE' => $item->upload_gdrive ?? '-',
                 'LINK' => $item->link ?? '-',
-                'Status Monev' => $doc->status ?? '-',
+                'Status Dokumen' => $doc->status ?? '-',
                 'Catatan Monev' => $doc->notes ?? '-',
             ],
             default => [],

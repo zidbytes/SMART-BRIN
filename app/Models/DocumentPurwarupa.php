@@ -31,8 +31,8 @@ class DocumentPurwarupa extends Model
         'jenis',
         'status',
         'nama_mitra',
-        'upload_gdrive',
         'link',
+        'status_upload',
     ];
 
     /**

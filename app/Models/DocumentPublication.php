@@ -26,13 +26,12 @@ class DocumentPublication extends Model
         'nonprsdi_authors',
         'jenis',
         'status',
+        'status_upload',    
         'nama_jurnal',
         'scopus_indexed',
         'reputasi',
-        'file_drive_link',
         'url',
         'doi',
-        'bulan', // Menambahkan kolom bulan
     ];
 
     protected $casts = [

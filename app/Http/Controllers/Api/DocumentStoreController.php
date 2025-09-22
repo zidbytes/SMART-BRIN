@@ -37,7 +37,7 @@ class DocumentStoreController extends Controller
         'judulciptaan' => 'Judul Inovasi/Karya',
         'Status' => 'Status',
         'PenciptaDariPusatRisetSainsDataDanInformasi' => 'Inventor',
-        'JenisDokumen' => 'Jenis Kekayaan Intelektual',
+                    'JenisDokumen' => 'Jenis Kekayaan Intelektual',
         'nomorPermohonan' => 'Nomor Pendaftaran',
         'tanggalPenerimaan' => 'Tanggal Sertifikasi',
         
@@ -202,7 +202,7 @@ class DocumentStoreController extends Controller
                 'user_id' => $user->id,
                 'document_type' => $documentKey,
                 'title' => $metadata['judul'] ?? $metadata['judulciptaan'] ?? $metadata['title'] ?? 'Judul Tidak Ditemukan',
-                'kelompok_riset' => $metadata['kelompokRiset'] ?? 'Tidak Ada',
+                'kelompok_riset' => $user->research_group ?? 'Tidak Ada',
                 'status' => 'Submitted',
             ]);
 
@@ -298,7 +298,6 @@ class DocumentStoreController extends Controller
                             'no_pendaftaran' => $metadata['nomorPermohonan'] ,
                             'no_sertifikat' => $metadata['nomorPencatatan'] ?? null,
                             'tanggal_sertifikasi' => $metadata['tanggalPenerimaan'],
-                            'link_upload' => $metadata['linkDriveKi'] ?? null,
                             'link_dokumen' => $metadata['linkDokumen'] ?? null,
                             'status_upload' => $metadata['status_upload'],
                         ];

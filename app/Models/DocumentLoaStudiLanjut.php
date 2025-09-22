@@ -28,7 +28,7 @@ class DocumentLoaStudiLanjut extends Model
         'keterangan',
         'upload_dakung',
         'tahun_masuk',
-        'direct_evidence',
+        'status_upload',
     ];
 
     /**

@@ -513,15 +513,15 @@ export default function Details() {
                 </div>
 
                 <div className="mb-6 rounded-lg border-b border-gray-200 bg-white p-4 shadow-md">
-                    <div className="flex justify-between items-center">
-                        <nav className="flex space-x-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                        <nav className="flex overflow-x-auto space-x-2 sm:space-x-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`px-4 py-2 text-sm font-medium ${
                                         activeTab === tab.id ? 'border-b-2 border-[#E62F2A] text-[#E62F2A]' : 'text-gray-500 hover:text-gray-700'
-                                    }`}
+                                    } whitespace-nowrap`}
                                 >
                                     {tab.title}
                                 </button>
@@ -529,7 +529,7 @@ export default function Details() {
                         </nav>
                         
                         {/* Research Group Filter */}
-                        <div className="w-64">
+                        <div className="w-full sm:w-64 mt-2 sm:mt-0">
                             <select
                                 id="researchGroupFilter"
                                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -575,6 +575,94 @@ export default function Details() {
                     open={updateDialogOpen}
                     onClose={() => setUpdateDialogOpen(false)}
                     onSubmit={(data) => {
+                        // Mapping frontend field to backend field for all document types
+                        const type = currentDocumentType;
+                        const mapField = (type: string, key: string) => {
+                            // Map for all types, extend as needed
+                            const maps: Record<string, Record<string, string>> = {
+                                publication: {
+                                    judul: 'judul',
+                                    authorsCivitasPRSDI: 'authorsCivitasPRSDI',
+                                    authorsNonCivitasPRSDI: 'authorsNonCivitasPRSDI',
+                                    'jenisDokumen/Jurnal/Prosiding/Bagbook': 'jenisDokumen/Jurnal/Prosiding/Bagbook',
+                                    statusDokumen: 'statusDokumen',
+                                    'namaJurnal/Prosiding/BagBook': 'namaJurnal/Prosiding/BagBook',
+                                    terindeksScopus: 'terindeksScopus',
+                                    reputasiScopus: 'reputasiScopus',
+                                    linkDokumen: 'linkDokumen',
+                                    linkDOI: 'linkDOI',
+                                    status_upload: 'status_upload',
+                                },
+                                ki: {
+                                    judulciptaan: 'judul',
+                                    Status: 'status',
+                                    PenciptaDariPusatRisetSainsDataDanInformasi: 'inventor1',
+                                    PenciptaNonPusatRisetSainsDataDanInformasi: 'nonSivitasPRSDI',
+                                    JenisDokumen: 'jenis',
+                                    nomorPermohonan: 'noPendaftaran',
+                                    tanggalPenerimaan: 'tanggalSertifikasi',
+                                    nomorPencatatan: 'noSertifikat',
+                                    linkDokumen: 'linkDokumen',
+                                    status_upload: 'status_upload',
+                                },
+                                pks: {
+                                    judul: 'judul',
+                                    PICKegiatanSivitasPRSDI: 'pic1',
+                                    PICKegiatanNonSivitasPRSDI: 'picNonPRSDI',
+                                    tipe: 'tipe',
+                                    jenis: 'jenis',
+                                    sumber: 'sumber',
+                                    output: 'output',
+                                    pihakK3: 'pihakK3',
+                                    nilai: 'nilai',
+                                    keterangan: 'keterangan',
+                                    noKerjasama: 'noKerjasama',
+                                    tglKerjasama: 'tanggalKerjasama',
+                                    noPerjanjian: 'noPerjanjian',
+                                    linkUpload: 'linkUpload',
+                                    tglPerjanjian: 'tanggalPerjanjian',
+                                    tahunPKS: 'tahunPKS',
+                                    linkDataPendukung: 'linkBuktiDukung',
+                                    status_upload: 'status_upload',
+                                },
+                                purwarupa: {
+                                    judulciptaan: 'judulPurwarupa',
+                                    PenciptaDariPusatRisetSainsDataDanInformasi: 'inventor1',
+                                    PenciptaNonPusatRisetSainsDataDanInformasi: 'nonSivitasPRSDI',
+                                    jenisPurwarupa: 'jenis',
+                                    namaMitra: 'namaMitra',
+                                    status: 'status',
+                                    linkDataPendukung: 'link',
+                                    status_upload: 'status_upload',
+                                },
+                                loa: {
+                                    namaMahasiswaAtauPeserta: 'namaSDMIptek',
+                                    programPendidikan: 'jenjangPendidikan',
+                                    namaUniversitasPenerima: 'namaUniversitas',
+                                    status: 'status',
+                                    tahunMasuk: 'tahunMasuk',
+                                    keterangan: 'keterangan',
+                                    linkDataPendukung: 'uploadDakung',
+                                    status_upload: 'status_upload',
+                                },
+                                pdvr: {
+                                    namaSdmPRSDI: 'namaSDMPRSDI',
+                                    namaSdmNonPRSDI: 'nonSDMPRSDI',
+                                    status: 'status',
+                                    lokasiKegiatan: 'lokasiKegiatan',
+                                    keterangan: 'keterangan',
+                                    linkDataPendukung: 'uploadDakung',
+                                    status_upload: 'status_upload',
+                                },
+                            };
+                            return (maps[type] && maps[type][key]) ? maps[type][key] : key;
+                        };
+                        // Transform data
+                        const transformed: Record<string, string> = {};
+                        Object.keys(data).forEach((key) => {
+                            const backendKey = mapField(type, key);
+                            transformed[backendKey] = data[key];
+                        });
                         // Ambil XSRF-TOKEN dari cookie
                         const getCookie = (name: string) => {
                             const value = `; ${document.cookie}`;
@@ -582,28 +670,19 @@ export default function Details() {
                             if (parts.length === 2) return parts.pop()?.split(';').shift();
                             return null;
                         };
-                        
                         const xsrfToken = getCookie('XSRF-TOKEN');
-                        
                         if (!xsrfToken) {
-                            console.error('XSRF-TOKEN tidak ditemukan dalam cookie');
                             alert('Error: XSRF-TOKEN tidak ditemukan. Coba refresh halaman.');
                             return;
                         }
-                        
-                        // Validasi lagi apakah pengguna berhak melakukan update
-                        // Dan status dokumen memenuhi syarat untuk diupdate
                         const statusMonev = String(currentDocumentData['Status Monev'] || '').toLowerCase();
                         const { auth } = pageProps;
                         const userRole = auth?.user?.role;
-                        
                         if (!(userRole === 'researcher' || userRole === 'head') || statusMonev === 'approved') {
                             alert('Anda tidak memiliki hak untuk mengubah dokumen ini atau dokumen sudah disetujui.');
                             setUpdateDialogOpen(false);
                             return;
                         }
-                        
-                        // Kirim data update ke server
                         fetch(route('details.update', { type: currentDocumentType, id: currentDocumentData.No || 0 }), {
                             method: 'PATCH',
                             headers: {
@@ -611,7 +690,7 @@ export default function Details() {
                                 'X-XSRF-TOKEN': decodeURIComponent(xsrfToken),
                                 'Accept': 'application/json',
                             },
-                            body: JSON.stringify(data),
+                            body: JSON.stringify(transformed),
                             credentials: 'same-origin'
                         })
                         .then(response => {
@@ -623,14 +702,11 @@ export default function Details() {
                             return response.json();
                         })
                         .then(data => {
-                            console.log('Document updated:', data);
                             alert('Dokumen berhasil diperbarui');
-                            // Tutup dialog dan refresh halaman
                             setUpdateDialogOpen(false);
                             window.location.reload();
                         })
                         .catch(error => {
-                            console.error('Error updating document:', error);
                             alert(`Gagal memperbarui dokumen: ${error.message}`);
                         });
                     }}
@@ -841,7 +917,9 @@ function Table({
                                         
                                         // --- LOGIKA BULAN MONEV ---
                                         if (col === 'Bulan Monev') {
-                                            const value = row[col] || '-';
+                                            // Mengambil nilai dari Periode Stamp jika ada atau dari Bulan jika ada
+                                            const value = row['Bulan'] || 
+                                                         (row['Periode Stamp'] ? new Date(String(row['Periode Stamp'])).toLocaleString('default', { month: 'long' }) : '-');
                                             // Hanya tampilkan bulan jika ada monev stamp
                                             const isStamped = row['Monev Stamp'] === true;
                                             
@@ -861,15 +939,16 @@ function Table({
                                         
                                         // --- LOGIKA STATUS MONEV ---
                                         if (col === 'Status Monev') {
-                                            const value = String(row[col] || '-');
+                                            // Menggunakan Status Dokumen dari data
+                                            const value = String(row['Status Dokumen'] || '-');
                                             let colorClass = 'bg-gray-200 text-gray-700';
                                             
                                             // Status options untuk dropdown
                                             const statusOptions = [
                                                 { value: 'approved', label: 'Approved', class: 'bg-green-100 text-green-700 font-semibold' },
                                                 { value: 'rejected', label: 'Rejected', class: 'bg-red-100 text-red-700 font-semibold' },
-                                                { value: 'pending', label: 'Pending', class: 'bg-yellow-100 text-yellow-700 font-semibold' },
-                                                { value: 'reviewed', label: 'Reviewed', class: 'bg-blue-100 text-blue-700 font-semibold' },
+                                                { value: 'submitted', label: 'Submitted', class: 'bg-blue-100 text-blue-700 font-semibold' },
+                                                { value: 'revised', label: 'Revised', class: 'bg-yellow-100 text-yellow-700 font-semibold' },
                                                 { value: '-', label: 'Not Set', class: 'bg-gray-200 text-gray-700' },
                                             ];
                                             
@@ -883,13 +962,11 @@ function Table({
                                                 const xsrfToken = getCookie('XSRF-TOKEN');
                                                 
                                                 if (!xsrfToken) {
-                                                    console.error('XSRF-TOKEN tidak ditemukan dalam cookie');
                                                     alert('Error: XSRF-TOKEN tidak ditemukan. Coba refresh halaman.');
                                                     return;
                                                 }
                                                 
                                                 // Gunakan fetch untuk update status
-                                                // Kirim hanya parameter status_monev (controller sudah diperbarui untuk menangani ini)
                                                 fetch(route('details.update', { type: type, id: row.No || 0 }), {
                                                     method: 'PATCH',
                                                     headers: {
@@ -898,7 +975,7 @@ function Table({
                                                         'Accept': 'application/json',
                                                     },
                                                     body: JSON.stringify({
-                                                        status_monev: newStatus,   // Hanya kirim parameter status_monev
+                                                        status_monev: newStatus,   // Gunakan status_monev yang konsisten
                                                     }),
                                                     credentials: 'same-origin'
                                                 })
@@ -912,12 +989,9 @@ function Table({
                                                 })
                                                 .then(() => {
                                                     alert('Status berhasil diperbarui');
-                                                    // Disini kita bisa refresh halaman atau update state lokal
-                                                    // Opsi sederhana adalah mereload halaman
                                                     window.location.reload();
                                                 })
                                                 .catch(error => {
-                                                    console.error('Error updating status:', error);
                                                     alert(`Gagal memperbarui status: ${error.message}`);
                                                 });
                                             };
@@ -993,17 +1067,16 @@ function Table({
                                                                                 const xsrfToken = getCookie('XSRF-TOKEN');
                                                                                 
                                                                                 if (!xsrfToken) {
-                                                                                    console.error('XSRF-TOKEN tidak ditemukan dalam cookie');
                                                                                     alert('Error: XSRF-TOKEN tidak ditemukan. Coba refresh halaman.');
                                                                                     return;
                                                                                 }
                                                                                 
                                                                                 // Gunakan fetch dengan try-catch
                                                                                 fetch(route('details.update', { type: type, id: row.No || 0 }), {
-                                                                                    method: 'PATCH', // Sesuai dengan route di web.php
+                                                                                    method: 'PATCH',
                                                                                     headers: {
                                                                                         'Content-Type': 'application/json',
-                                                                                        'X-XSRF-TOKEN': decodeURIComponent(xsrfToken), // Gunakan X-XSRF-TOKEN
+                                                                                        'X-XSRF-TOKEN': decodeURIComponent(xsrfToken),
                                                                                         'Accept': 'application/json',
                                                                                     },
                                                                                     body: JSON.stringify({
@@ -1015,7 +1088,6 @@ function Table({
                                                                                     // Cek response status
                                                                                     if (!response.ok) {
                                                                                         return response.text().then(text => {
-                                                                                            console.error('Response error:', text);
                                                                                             throw new Error(`Server responded with ${response.status}: ${text}`);
                                                                                         });
                                                                                     }
@@ -1026,12 +1098,10 @@ function Table({
                                                                                     window.location.reload();
                                                                                 })
                                                                                 .catch(error => {
-                                                                                    console.error('Error saving note:', error);
                                                                                     alert(`Gagal menyimpan catatan: ${error.message}`);
                                                                                 });
                                                                             }
                                                                         } catch (error) {
-                                                                            console.error('Unexpected error:', error);
                                                                             alert(`Error tak terduga: ${error}`);
                                                                         }
                                                                     }}
@@ -1051,7 +1121,7 @@ function Table({
                                         if (col === 'Aksi') {
                                             // Hanya tampilkan update button untuk researcher atau head
                                             // Dan hanya jika status monev tidak "approved"
-                                            const statusMonev = String(row['Status Monev'] || '').toLowerCase();
+                                            const statusMonev = String(row['Status Dokumen'] || '').toLowerCase();
                                             const canUpdate = (userRole === 'researcher' || userRole === 'head') && statusMonev !== 'approved';
                                             
                                             return (

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TargetTahunan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,7 +17,6 @@ class TargetTahunanController extends Controller
      */
     public function index(): Response
     {
-        // Menggunakan otorisasi baru yang mengizinkan 'monev' untuk melihat.
         $this->authorizeViewer();
 
         $targets = TargetTahunan::orderByDesc('tahun')->get();
@@ -34,14 +34,21 @@ class TargetTahunanController extends Controller
 
         $validated = $this->validateTarget($request);
 
-        TargetTahunan::updateOrCreate(
-            ['tahun' => $validated['tahun']],
-            $validated
-        );
+        DB::beginTransaction();
+        try {
+            TargetTahunan::updateOrCreate(
+                ['tahun' => $validated['tahun']],
+                $validated
+            );
 
-        return redirect()
-            ->route('target-tahunan.index')
-            ->with('success', 'Target tahunan berhasil disimpan.');
+            DB::commit();
+            return redirect()
+                ->route('target-tahunan.index')
+                ->with('success', 'Target tahunan berhasil disimpan.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Gagal menyimpan target tahunan.'])->withInput();
+        }
     }
 
     /**
@@ -67,12 +74,19 @@ class TargetTahunanController extends Controller
 
         $validated = $this->validateTarget($request);
 
-        $target = TargetTahunan::findOrFail($id);
-        $target->update($validated);
+        DB::beginTransaction();
+        try {
+            $target = TargetTahunan::findOrFail($id);
+            $target->update($validated);
 
-        return redirect()
-            ->route('target-tahunan.index')
-            ->with('success', 'Target tahunan berhasil diperbarui.');
+            DB::commit();
+            return redirect()
+                ->route('target-tahunan.index')
+                ->with('success', 'Target tahunan berhasil diperbarui.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Gagal memperbarui target tahunan.'])->withInput();
+        }
     }
 
     /**
@@ -83,11 +97,18 @@ class TargetTahunanController extends Controller
     {
         $this->authorizeHead();
 
-        TargetTahunan::findOrFail($id)->delete();
+        DB::beginTransaction();
+        try {
+            TargetTahunan::findOrFail($id)->delete();
+            DB::commit();
 
-        return redirect()
-            ->route('target-tahunan.index')
-            ->with('success', 'Target tahunan berhasil dihapus.');
+            return redirect()
+                ->route('target-tahunan.index')
+                ->with('success', 'Target tahunan berhasil dihapus.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Gagal menghapus target tahunan.']);
+        }
     }
 
     /**

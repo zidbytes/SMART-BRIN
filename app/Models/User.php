@@ -22,7 +22,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', 
+        'role',
+        'nip',
+        'jenis_kelamin',
         'research_group', 
     ];
 

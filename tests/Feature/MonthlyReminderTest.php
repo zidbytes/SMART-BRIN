@@ -18,7 +18,7 @@ class MonthlyReminderTest extends TestCase
         $this->seed(\Database\Seeders\UsersTableSeeder::class);
 
         // Ambil user dari seeder
-        $user = User::where('email', 'test.user@BRIN.co.id')->first();
+        $user = User::where('email', 'rsarakasa@BRIN.co.id')->first();
 
         // Pastikan user ditemukan
         $this->assertNotNull($user, 'User test.user@BRIN.co.id tidak ditemukan');
