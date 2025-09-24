@@ -1,0 +1,14 @@
+# Vercel ignore file for Laravel
+/tests
+/storage/framework/cache
+/storage/framework/sessions
+/storage/framework/views
+/storage/logs
+/node_modules
+/.git
+/.env.example
+/phpunit.xml
+/README.md
+*.log
+.DS_Store
+Thumbs.db

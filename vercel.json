@@ -1,26 +1,64 @@
 {
     "version": 2,
-    "framework": null,
     "builds": [
         {
-            "src": "resources/js/app.tsx",
-            "use": "@vercel/node",
-            "config": {
-                "maxLambdaSize": "15mb",
-                "compiler": "vite",
-                "project": "vite.config.ts"
-            }
+            "src": "api/index.php",
+            "use": "vercel-php@0.7.3"
         },
         {
-            "src": "public/index.php",
-            "use": "vercel-php@0.6.0"
+            "src": "package.json",
+            "use": "@vercel/static-build"
         }
     ],
     "routes": [
-        { "src": "/build/(.*)", "dest": "/public/build/$1" },
+        {
+            "src": "/build/(.*)",
+            "dest": "/public/build/$1"
+        },
+        {
+            "src": "/(css|js|images|assets)/.*",
+            "dest": "/public/$0"
+        },
+        {
+            "src": "/favicon.ico",
+            "dest": "/public/favicon.ico"
+        },
+        {
+            "src": "/favicon.svg",
+            "dest": "/public/favicon.svg"
+        },
+        {
+            "src": "/logo.svg",
+            "dest": "/public/logo.svg"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "dest": "/public/apple-touch-icon.png"
+        },
+        {
+            "src": "/robots.txt",
+            "dest": "/public/robots.txt"
+        },
+        {
+            "src": "/storage/(.*)",
+            "dest": "/storage/app/public/$1"
+        },
         {
             "src": "/(.*)",
-            "dest": "/public/index.php"
+            "dest": "/api/index.php"
         }
-    ]
+    ],
+    "env": {
+        "APP_ENV": "production",
+        "APP_DEBUG": "false",
+        "APP_CONFIG_CACHE": "/tmp/config.php",
+        "APP_ROUTES_CACHE": "/tmp/routes.php",
+        "APP_PACKAGES_CACHE": "/tmp/packages.php",
+        "APP_SERVICES_CACHE": "/tmp/services.php",
+        "APP_COMPILED_VIEWS_PATH": "/tmp/views",
+        "SESSION_DRIVER": "cookie",
+        "LOG_CHANNEL": "stderr",
+        "CACHE_DRIVER": "database",
+        "QUEUE_CONNECTION": "database"
+    }
 }

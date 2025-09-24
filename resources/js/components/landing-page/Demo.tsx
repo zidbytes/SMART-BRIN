@@ -4,9 +4,9 @@ import Autoplay from 'embla-carousel-autoplay';
 import * as React from 'react';
 import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
 
-import demo1 from '../../assets/demo/demo1.svg';
-import demo2 from '../../assets/demo/demo2.svg';
-import demo3 from '../../assets/demo/demo3.svg';
+import demo1 from '../../assets/Demo/demo1.svg';
+import demo2 from '../../assets/Demo/demo2.svg';
+import demo3 from '../../assets/Demo/demo3.svg';
 
 const images = [demo1, demo2, demo3];
 
